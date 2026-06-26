@@ -45,7 +45,7 @@ export default function SignUpPage() {
       const user = await register(email, password, fullName)
       toast.success("Account created — welcome to Future Automotive!")
       const from = (location.state as any)?.from
-      navigate(user.role === "admin" || user.role === "editor" ? "/admin" : (from || "/"))
+      navigate(user.role === "admin" || user.role === "operator" ? "/admin" : (from || "/"))
     } catch (err: any) {
       setError(err.message || "Registration failed")
     } finally {

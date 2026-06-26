@@ -8,6 +8,7 @@ import { Header } from "@/components/layout/Header"
 import { Footer } from "@/components/layout/Footer"
 import { Reveal } from "@/components/ui/Reveal"
 import { Comments } from "@/components/sections/Comments"
+import { Price } from "@/components/ui/Price"
 import { useReview, useReviews, useCreateLead } from "@/hooks/useApi"
 import { FALLBACK_IMAGE, FALLBACK_IMAGE_LG, DEALER_LOCATIONS } from "@/lib/constants"
 
@@ -135,9 +136,7 @@ export default function CarDetailsPage() {
                   </div>
                 )}
                 <div>
-                  <div className="text-3xl font-archivo font-extrabold">
-                    {review.specs?.price != null ? `$${review.specs.price.toLocaleString()}` : "On request"}
-                  </div>
+                  <Price usd={review.specs?.price} size="lg" />
                   <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground">
                     {review.condition === "certified" ? "Certified Pre-Owned" : review.condition === "used" ? "Used" : "New"}
                     {review.specs?.mileage != null ? ` · ${review.specs.mileage.toLocaleString()} km` : ""}

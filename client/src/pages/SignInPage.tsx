@@ -27,7 +27,7 @@ export default function SignInPage() {
       // Role-based redirect: staff go to the dashboard, customers go home
       // (or back to wherever they were heading).
       const from = (location.state as any)?.from
-      if (user.role === "admin" || user.role === "editor") navigate("/admin")
+      if (user.role === "admin" || user.role === "operator") navigate("/admin")
       else navigate(from || "/")
     } catch (err: any) {
       setError(err.message || "Login failed")

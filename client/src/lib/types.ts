@@ -2,7 +2,7 @@ export type Condition = "new" | "used" | "certified"
 export type ReviewStatus = "draft" | "published"
 export type CommentStatus = "approved" | "pending" | "spam"
 export type LeadStatus = "new" | "contacted" | "qualified" | "closed"
-export type UserRole = "admin" | "editor" | "user"
+export type UserRole = "admin" | "operator" | "user"
 
 export interface ReviewSpec {
   id?: string

@@ -16,37 +16,40 @@ import { updateUserSchema } from '../validators/user.validator.js';
 
 const router = express.Router();
 
-// Everything under /api/admin requires an admin role (re-checked against the DB).
-router.use('/api/admin', requireStaff); // admin or editor for all content routes
+// Authentication for the whole admin area: admin OR operator.
+// Sensitive actions below are additionally gated to admin only.
+router.use('/api/admin', requireStaff);
 
 // ── Reviews ──
+// Operators can create & edit (their creates are forced to draft in the controller);
+// only admins can publish, delete or restore.
 router.post('/api/admin/reviews', validate(createReviewSchema), ReviewController.create);
 router.get('/api/admin/reviews', ReviewController.adminList);
 router.put('/api/admin/reviews/:id', validateUUID(), validate(updateReviewSchema), ReviewController.update);
-router.patch('/api/admin/reviews/:id/publish', validateUUID(), validate(setPublishSchema), ReviewController.setPublish);
-router.delete('/api/admin/reviews/:id', validateUUID(), ReviewController.remove);
-router.post('/api/admin/reviews/:id/restore', validateUUID(), ReviewController.restore);
+router.patch('/api/admin/reviews/:id/publish', requireAdmin, validateUUID(), validate(setPublishSchema), ReviewController.setPublish);
+router.delete('/api/admin/reviews/:id', requireAdmin, validateUUID(), ReviewController.remove);
+router.post('/api/admin/reviews/:id/restore', requireAdmin, validateUUID(), ReviewController.restore);
 
-// ── Comments ──
+// ── Comments (moderation — admin & operator) ──
 router.get('/api/admin/comments', CommentController.adminList);
 router.put('/api/admin/comments/:id', validateUUID(), validate(moderateCommentSchema), CommentController.moderate);
 router.delete('/api/admin/comments/:id', validateUUID(), CommentController.remove);
 
-// ── Brands (CRUD) ──
+// ── Brands (admin only) ──
 router.get('/api/admin/brands', BrandController.list);
-router.post('/api/admin/brands', validate(createBrandSchema), BrandController.create);
-router.put('/api/admin/brands/:id', validateUUID(), validate(updateBrandSchema), BrandController.update);
-router.delete('/api/admin/brands/:id', validateUUID(), BrandController.remove);
+router.post('/api/admin/brands', requireAdmin, validate(createBrandSchema), BrandController.create);
+router.put('/api/admin/brands/:id', requireAdmin, validateUUID(), validate(updateBrandSchema), BrandController.update);
+router.delete('/api/admin/brands/:id', requireAdmin, validateUUID(), BrandController.remove);
 
-// ── Users (CRUD + roles) ──
+// ── Users (admin only) ──
 router.get('/api/admin/users', requireAdmin, UserController.list);
 router.put('/api/admin/users/:id', requireAdmin, validateUUID(), validate(updateUserSchema), UserController.update);
 router.delete('/api/admin/users/:id', requireAdmin, validateUUID(), UserController.remove);
 
-// ── Leads ──
+// ── Leads (view/update — staff; delete — admin only) ──
 router.get('/api/admin/leads', LeadController.adminList);
 router.put('/api/admin/leads/:id', validateUUID(), validate(updateLeadSchema), LeadController.update);
-router.delete('/api/admin/leads/:id', validateUUID(), LeadController.remove);
+router.delete('/api/admin/leads/:id', requireAdmin, validateUUID(), LeadController.remove);
 
 // ── Analytics ──
 router.get('/api/admin/analytics', AnalyticsController.overview);

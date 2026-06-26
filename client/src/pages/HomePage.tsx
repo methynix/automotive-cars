@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react"
 import { Link } from "react-router-dom"
 import { Header } from "@/components/layout/Header"
 import { Footer } from "@/components/layout/Footer"
+import { usePriceFormatter } from "@/lib/currency"
 import { Hero } from "@/components/sections/Hero"
 import { EditorialGrid } from "@/components/sections/EditorialGrid"
 import { Button } from "@/components/ui/Button"
@@ -16,6 +17,7 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [newsletterEmail, setNewsletterEmail] = useState("")
   const [newsletterDone, setNewsletterDone] = useState(false)
+  const fmtPrice = usePriceFormatter()
 
   useEffect(() => {
     getReviews({ limit: 20 })
@@ -111,7 +113,7 @@ export default function HomePage() {
                       <h3 className="text-xl font-archivo font-black uppercase tracking-tight mb-2 group-hover:text-primary transition-colors">{r.title}</h3>
                       <p className="text-sm text-muted-foreground mb-6 line-clamp-2">{r.excerpt}</p>
                       <div className="flex items-center justify-between pt-6 border-t border-border mt-auto">
-                        <span className="text-xs font-mono font-bold uppercase tracking-widest">${r.specs?.price?.toLocaleString()}</span>
+                        <span className="text-xs font-mono font-bold uppercase tracking-widest">{fmtPrice(r.specs?.price)}</span>
                         <FiArrowRight className="group-hover:translate-x-2 transition-transform text-primary" />
                       </div>
                     </Link>

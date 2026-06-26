@@ -37,6 +37,11 @@ export const ReviewController = {
   async create(req, res, next) {
     try {
       const payload = { ...req.body, created_by: req.user.id };
+      // Operators can only create drafts — publishing is an admin action.
+      if (req.user.role !== 'admin') {
+        payload.status = 'draft';
+        payload.featured = false;
+      }
       const data = await ReviewService.createReview(payload);
       return success(res, data, 201);
     } catch (err) { next(err); }
@@ -44,7 +49,13 @@ export const ReviewController = {
 
   async update(req, res, next) {
     try {
-      const data = await ReviewService.updateReview(req.params.id, req.body);
+      const payload = { ...req.body };
+      // Operators may edit content but cannot publish or feature a vehicle.
+      if (req.user.role !== 'admin') {
+        delete payload.status;
+        delete payload.featured;
+      }
+      const data = await ReviewService.updateReview(req.params.id, payload);
       return success(res, data);
     } catch (err) { next(err); }
   },

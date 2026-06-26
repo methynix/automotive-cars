@@ -2,7 +2,7 @@ import { useState } from "react"
 import { Navigate } from "react-router-dom"
 import {
   FiGrid, FiBox, FiUsers, FiTag, FiInbox, FiSettings, FiLogOut,
-  FiPlus, FiEdit, FiTrash2, FiUploadCloud, FiEye, FiEyeOff, FiX, FiCheck, FiLoader, FiAlertTriangle,
+  FiPlus, FiEdit, FiTrash2, FiUploadCloud, FiEye, FiEyeOff, FiX, FiCheck, FiLoader, FiAlertTriangle, FiMessageSquare,
 } from "react-icons/fi"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts"
 import { useAuth } from "@/lib/auth"
@@ -10,13 +10,14 @@ import { useToast } from "@/lib/toast"
 import { uploadImage } from "@/lib/api"
 import {
   useAdminReviews, useCreateReview, useUpdateReview, useDeleteReview, useSetPublish,
+  useAdminComments, useModerateComment, useDeleteComment,
   useAdminBrands, useCreateBrand, useUpdateBrand, useDeleteBrand,
   useUsers, useUpdateUser, useDeleteUser,
   useLeads, useUpdateLead, useDeleteLead,
   useAnalytics,
 } from "@/hooks/useApi"
 import { BODY_STYLES, CONDITIONS } from "@/lib/constants"
-import type { Review, ReviewInput, ReviewSpec, Brand } from "@/lib/types"
+import type { Review, ReviewInput, ReviewSpec, GalleryImage, Brand } from "@/lib/types"
 
 // Module-level so inputs keep focus across re-renders (defining this inside a
 // component would remount every field on each keystroke).
@@ -54,7 +55,7 @@ function useConfirm() {
   return { confirm, dialog }
 }
 
-type Tab = "dashboard" | "vehicles" | "brands" | "leads" | "users" | "settings"
+type Tab = "dashboard" | "vehicles" | "brands" | "comments" | "leads" | "users" | "settings"
 
 const emptyForm: ReviewInput = {
   title: "", excerpt: "", featured_image: "", manufacturer: "", model: "",
@@ -73,7 +74,8 @@ export default function AdminPage() {
   const nav: { id: Tab; label: string; icon: any; adminOnly?: boolean }[] = [
     { id: "dashboard", label: "Dashboard", icon: FiGrid },
     { id: "vehicles", label: "Vehicles", icon: FiBox },
-    { id: "brands", label: "Brands", icon: FiTag },
+    { id: "brands", label: "Brands", icon: FiTag, adminOnly: true },
+    { id: "comments", label: "Comments", icon: FiMessageSquare },
     { id: "leads", label: "Leads", icon: FiInbox },
     { id: "users", label: "Users", icon: FiUsers, adminOnly: true },
     { id: "settings", label: "Settings", icon: FiSettings },
@@ -106,7 +108,8 @@ export default function AdminPage() {
       <main className="flex-1 p-8 overflow-x-hidden">
         {tab === "dashboard" && <DashboardTab />}
         {tab === "vehicles" && <VehiclesTab />}
-        {tab === "brands" && <BrandsTab />}
+        {tab === "brands" && isAdmin && <BrandsTab />}
+        {tab === "comments" && <CommentsTab />}
         {tab === "leads" && <LeadsTab />}
         {tab === "users" && isAdmin && <UsersTab currentUserId={user!.id} />}
         {tab === "settings" && <SettingsTab />}
@@ -170,6 +173,7 @@ function VehiclesTab() {
   const [open, setOpen] = useState(false)
   const { confirm, dialog } = useConfirm()
   const toast = useToast()
+  const { isAdmin } = useAuth()
 
   const rows = data?.data ?? []
 
@@ -216,6 +220,16 @@ function VehiclesTab() {
                     {(() => {
                       const isPublished = r.status === "published"
                       const pendingThis = setPublish.isPending && setPublish.variables?.id === r.id
+                      // Only admins can publish/unpublish. Operators see a read-only badge.
+                      if (!isAdmin) {
+                        return (
+                          <span className={`inline-flex items-center gap-1.5 text-[10px] font-mono uppercase px-2.5 py-1.5 border ${
+                            isPublished ? "border-green-600 text-green-600" : "border-muted-foreground/40 text-muted-foreground"
+                          }`}>
+                            {isPublished ? <FiEye size={12} /> : <FiEyeOff size={12} />}{isPublished ? "Published" : "Draft"}
+                          </span>
+                        )
+                      }
                       return (
                         <button
                           title={isPublished ? "Published — click to unpublish (hide from site)" : "Draft — click to publish (make live)"}
@@ -235,7 +249,9 @@ function VehiclesTab() {
                   <td className="p-3">
                     <div className="flex items-center justify-end gap-2">
                       <button title="Edit" onClick={() => openEdit(r)} className="p-2 border border-border hover:border-primary"><FiEdit size={14} /></button>
-                      <button title="Delete" onClick={() => onDelete(r)} className="p-2 border border-border hover:border-primary text-primary"><FiTrash2 size={14} /></button>
+                      {isAdmin && (
+                        <button title="Delete" onClick={() => onDelete(r)} className="p-2 border border-border hover:border-primary text-primary"><FiTrash2 size={14} /></button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -249,6 +265,7 @@ function VehiclesTab() {
       {open && (
         <VehicleForm
           initial={editing}
+          isAdmin={isAdmin}
           saving={createReview.isPending || updateReview.isPending}
           onClose={() => setOpen(false)}
           onSave={async (payload) => {
@@ -265,11 +282,12 @@ function VehiclesTab() {
   )
 }
 
-function VehicleForm({ initial, onClose, onSave, saving }: {
+function VehicleForm({ initial, onClose, onSave, saving, isAdmin }: {
   initial: Review | null
   onClose: () => void
   onSave: (data: ReviewInput) => Promise<void>
   saving: boolean
+  isAdmin: boolean
 }) {
   const [form, setForm] = useState<ReviewInput>(() => initial ? {
     title: initial.title, excerpt: initial.excerpt || "", featured_image: initial.featured_image || "",
@@ -282,6 +300,8 @@ function VehicleForm({ initial, onClose, onSave, saving }: {
 
   const [errors, setErrors] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
+  const [galleryUploading, setGalleryUploading] = useState(false)
+  const [gallery, setGallery] = useState<GalleryImage[]>(initial?.gallery ?? [])
   const [prosText, setProsText] = useState((initial?.content?.pros || []).join("\n"))
   const [consText, setConsText] = useState((initial?.content?.cons || []).join("\n"))
 
@@ -312,6 +332,23 @@ function VehicleForm({ initial, onClose, onSave, saving }: {
     } finally { setUploading(false) }
   }
 
+  // Gallery: upload one or more interior/exterior shots, each appended to the list.
+  const handleGalleryUpload = async (files?: FileList | null) => {
+    if (!files || files.length === 0) return
+    setGalleryUploading(true)
+    try {
+      const uploaded: GalleryImage[] = []
+      for (const file of Array.from(files)) {
+        const { url } = await uploadImage(file, form.manufacturer, form.model)
+        uploaded.push({ image_url: url })
+      }
+      setGallery((g) => [...g, ...uploaded])
+    } catch (err: any) {
+      setErrors([err?.message || "Gallery upload failed. Check your storage config / network."])
+    } finally { setGalleryUploading(false) }
+  }
+  const removeGalleryImage = (idx: number) => setGallery((g) => g.filter((_, i) => i !== idx))
+
   const submit = async () => {
     const e = validate()
     setErrors(e)
@@ -323,6 +360,7 @@ function VehicleForm({ initial, onClose, onSave, saving }: {
         pros: prosText.split("\n").map((s) => s.trim()).filter(Boolean),
         cons: consText.split("\n").map((s) => s.trim()).filter(Boolean),
       },
+      gallery: gallery.map((g, i) => ({ image_url: g.image_url, alt_text: g.alt_text ?? null, sort_order: i })),
     }
     await onSave(payload)
   }
@@ -391,22 +429,54 @@ function VehicleForm({ initial, onClose, onSave, saving }: {
             <Field label="Pros (one per line)"><textarea className={`${inputCls} min-h-[80px]`} value={prosText} onChange={(e) => setProsText(e.target.value)} /></Field>
             <Field label="Cons (one per line)"><textarea className={`${inputCls} min-h-[80px]`} value={consText} onChange={(e) => setConsText(e.target.value)} /></Field>
           </div>
-          <div className="flex items-center gap-6">
-            <label className="flex items-center gap-2 text-xs font-mono uppercase">
-              <input type="checkbox" checked={form.featured} onChange={(e) => set({ featured: e.target.checked })} /> Featured
-            </label>
-            <Field label="Status">
-              <select className={inputCls} value={form.status} onChange={(e) => set({ status: e.target.value as any })}>
-                <option value="draft">Draft</option>
-                <option value="published">Published</option>
-              </select>
-            </Field>
+
+          {/* Gallery — multiple interior/exterior shots */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="block text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Gallery ({gallery.length})</span>
+              <label className={`inline-flex items-center gap-1.5 border px-3 py-1.5 text-xs font-mono transition-colors ${galleryUploading ? "border-primary text-primary cursor-wait" : "border-border hover:border-primary cursor-pointer"}`}>
+                {galleryUploading ? <FiLoader size={14} className="animate-spin" /> : <FiUploadCloud size={14} />} {galleryUploading ? "Uploading…" : "Add images"}
+                <input type="file" accept="image/*" multiple className="hidden" disabled={galleryUploading} onChange={(e) => handleGalleryUpload(e.target.files)} />
+              </label>
+            </div>
+            {gallery.length === 0 ? (
+              <p className="text-[11px] font-mono text-muted-foreground border border-dashed border-border p-4 text-center">No gallery images yet. Add interior, exterior and detail shots.</p>
+            ) : (
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                {gallery.map((g, i) => (
+                  <div key={`${g.image_url}-${i}`} className="relative aspect-video border border-border overflow-hidden bg-muted group">
+                    <img src={g.image_url} alt={g.alt_text || ""} className="w-full h-full object-cover" />
+                    <button type="button" onClick={() => removeGalleryImage(i)}
+                      className="absolute top-1 right-1 w-6 h-6 bg-black/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary"
+                      title="Remove"><FiX size={12} /></button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
+
+          {isAdmin ? (
+            <div className="flex items-center gap-6">
+              <label className="flex items-center gap-2 text-xs font-mono uppercase">
+                <input type="checkbox" checked={form.featured} onChange={(e) => set({ featured: e.target.checked })} /> Featured
+              </label>
+              <Field label="Status">
+                <select className={inputCls} value={form.status} onChange={(e) => set({ status: e.target.value as any })}>
+                  <option value="draft">Draft</option>
+                  <option value="published">Published</option>
+                </select>
+              </Field>
+            </div>
+          ) : (
+            <p className="text-[11px] font-mono text-muted-foreground border border-border p-3">
+              Saved as a <span className="text-foreground">draft</span>. An admin will review and publish it.
+            </p>
+          )}
         </div>
 
         <div className="flex justify-end gap-3 mt-8">
           <button onClick={onClose} className="px-5 py-3 text-xs font-mono uppercase tracking-widest border border-border hover:border-primary">Cancel</button>
-          <button onClick={submit} disabled={saving || uploading} className="px-6 py-3 text-xs font-mono font-black uppercase tracking-widest bg-primary text-white hover:bg-foreground transition-colors disabled:opacity-60">
+          <button onClick={submit} disabled={saving || uploading || galleryUploading} className="px-6 py-3 text-xs font-mono font-black uppercase tracking-widest bg-primary text-white hover:bg-foreground transition-colors disabled:opacity-60">
             {saving ? "Saving…" : initial ? "Save changes" : "Create vehicle"}
           </button>
         </div>
@@ -471,6 +541,7 @@ function LeadsTab() {
   const deleteLead = useDeleteLead()
   const { confirm, dialog } = useConfirm()
   const toast = useToast()
+  const { isAdmin } = useAuth()
   const rows = data?.data ?? []
   const statuses = ["new", "contacted", "qualified", "closed"] as const
 
@@ -495,7 +566,7 @@ function LeadsTab() {
                       {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </td>
-                  <td className="p-3 text-right"><button onClick={async () => { if (await confirm(`Delete the lead from ${l.full_name}?`)) deleteLead.mutate(l.id, { onSuccess: () => toast.success("Lead deleted.") }) }} className="p-2 border border-border hover:border-primary text-primary"><FiTrash2 size={14} /></button></td>
+                  <td className="p-3 text-right">{isAdmin && (<button onClick={async () => { if (await confirm(`Delete the lead from ${l.full_name}?`)) deleteLead.mutate(l.id, { onSuccess: () => toast.success("Lead deleted.") }) }} className="p-2 border border-border hover:border-primary text-primary"><FiTrash2 size={14} /></button>)}</td>
                 </tr>
               ))}
               {rows.length === 0 && <tr><td colSpan={5} className="p-8 text-center text-muted-foreground font-mono text-xs">No leads yet.</td></tr>}
@@ -516,7 +587,7 @@ function UsersTab({ currentUserId }: { currentUserId: string }) {
   const { confirm, dialog } = useConfirm()
   const toast = useToast()
   const rows = data?.data ?? []
-  const roles = ["user", "editor", "admin"]
+  const roles: [string, string][] = [["user", "Customer"], ["operator", "Operator"], ["admin", "Admin"]]
 
   return (
     <div>
@@ -535,7 +606,7 @@ function UsersTab({ currentUserId }: { currentUserId: string }) {
                     <select value={u.role} disabled={u.id === currentUserId}
                       onChange={(e) => updateUser.mutate({ id: u.id, data: { role: e.target.value } }, { onSuccess: () => toast.success("Role updated.") })}
                       className="border border-border bg-background px-2 py-1 text-xs font-mono uppercase disabled:opacity-50">
-                      {roles.map((r) => <option key={r} value={r}>{r}</option>)}
+                      {roles.map(([val, label]) => <option key={val} value={val}>{label}</option>)}
                     </select>
                   </td>
                   <td className="p-3">
@@ -556,6 +627,91 @@ function UsersTab({ currentUserId }: { currentUserId: string }) {
         </div>
       )}
       <p className="text-[11px] font-mono text-muted-foreground mt-4">You can't change your own role or delete your own account.</p>
+      {dialog}
+    </div>
+  )
+}
+
+/* ─────────────── Comments (moderation) ─────────────── */
+function CommentsTab() {
+  const [status, setStatus] = useState<"pending" | "approved" | "spam" | "all">("pending")
+  const { data, isLoading } = useAdminComments({ limit: 200 })
+  const moderate = useModerateComment()
+  const del = useDeleteComment()
+  const { confirm, dialog } = useConfirm()
+  const toast = useToast()
+
+  const all = data?.data ?? []
+  const counts = {
+    pending: all.filter((c) => c.status === "pending").length,
+    approved: all.filter((c) => c.status === "approved").length,
+    spam: all.filter((c) => c.status === "spam").length,
+    all: all.length,
+  }
+  const rows = status === "all" ? all : all.filter((c) => c.status === status)
+
+  const setStatusOf = (id: string, s: "approved" | "pending" | "spam") =>
+    moderate.mutate({ id, status: s }, {
+      onSuccess: () => toast.success(s === "approved" ? "Comment approved." : s === "spam" ? "Marked as spam." : "Moved to pending."),
+      onError: (e: any) => toast.error(e?.message || "Could not update comment."),
+    })
+
+  const filters: { key: typeof status; label: string }[] = [
+    { key: "pending", label: `Pending (${counts.pending})` },
+    { key: "approved", label: `Approved (${counts.approved})` },
+    { key: "spam", label: `Spam (${counts.spam})` },
+    { key: "all", label: `All (${counts.all})` },
+  ]
+
+  return (
+    <div>
+      <h2 className="text-3xl font-archivo font-extrabold uppercase tracking-tight mb-8">Comments</h2>
+
+      <div className="flex flex-wrap gap-2 mb-6">
+        {filters.map((f) => (
+          <button key={f.key} onClick={() => setStatus(f.key)}
+            className={`px-3 py-1.5 text-[10px] font-mono uppercase tracking-widest border transition-colors ${
+              status === f.key ? "border-primary bg-primary/10 text-primary font-bold" : "border-border hover:bg-muted/40"
+            }`}>
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      {isLoading ? <p className="font-mono text-sm">Loading…</p> : rows.length === 0 ? (
+        <div className="border border-dashed border-border p-10 text-center text-muted-foreground font-mono text-xs uppercase tracking-widest">
+          No {status === "all" ? "" : status} comments
+        </div>
+      ) : (
+        <ul className="space-y-3">
+          {rows.map((c) => (
+            <li key={c.id} className="border border-border p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-archivo font-bold text-sm uppercase tracking-wide">{c.author_name}</span>
+                    <span className={`text-[9px] font-mono uppercase px-1.5 py-0.5 ${
+                      c.status === "approved" ? "bg-green-500/10 text-green-600" : c.status === "spam" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                    }`}>{c.status}</span>
+                    <span className="text-[10px] font-mono text-muted-foreground">{new Date(c.created_at).toLocaleDateString()}</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground leading-relaxed break-words">{c.body}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {c.status !== "approved" && (
+                    <button title="Approve" onClick={() => setStatusOf(c.id, "approved")} className="p-2 border border-border hover:border-green-600 text-green-600"><FiCheck size={14} /></button>
+                  )}
+                  {c.status !== "spam" && (
+                    <button title="Mark as spam" onClick={() => setStatusOf(c.id, "spam")} className="p-2 border border-border hover:border-primary text-primary"><FiAlertTriangle size={14} /></button>
+                  )}
+                  <button title="Delete" onClick={async () => { if (await confirm("Delete this comment permanently?")) del.mutate(c.id, { onSuccess: () => toast.success("Comment deleted.") }) }}
+                    className="p-2 border border-border hover:border-primary text-primary"><FiTrash2 size={14} /></button>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
       {dialog}
     </div>
   )

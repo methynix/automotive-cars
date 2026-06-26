@@ -5,6 +5,7 @@ import { Header } from "@/components/layout/Header"
 import { Footer } from "@/components/layout/Footer"
 import { Reveal } from "@/components/ui/Reveal"
 import { useReviews, useBrands } from "@/hooks/useApi"
+import { Price } from "@/components/ui/Price"
 import { BODY_STYLES, CONDITIONS, DRIVETRAINS, SORT_OPTIONS, FALLBACK_IMAGE } from "@/lib/constants"
 import type { ReviewFilters } from "@/lib/types"
 
@@ -261,8 +262,8 @@ export default function CarListingsPage() {
                             <span>{r.specs?.mileage != null ? `${r.specs.mileage.toLocaleString()} km` : "—"}</span>
                             {r.rating != null && <span className="text-foreground font-bold">{r.rating.toFixed(1)}/10</span>}
                           </div>
-                          <div className="mt-3 text-lg font-archivo font-extrabold">
-                            {r.specs?.price != null ? `$${r.specs.price.toLocaleString()}` : "Price on request"}
+                          <div className="mt-3">
+                            <Price usd={r.specs?.price} size="md" />
                           </div>
                         </div>
                       </Link>

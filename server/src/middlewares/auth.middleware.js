@@ -44,5 +44,5 @@ function authenticate(allowedRoles) {
 
 // admin only — user management, role changes
 export const requireAdmin = authenticate(['admin']);
-// admin or editor — day-to-day content management
-export const requireStaff = authenticate(['admin', 'editor']);
+// admin or operator — day-to-day content management
+export const requireStaff = authenticate(['admin', 'operator']);

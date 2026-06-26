@@ -4,6 +4,7 @@ import { FiSearch, FiUser, FiSun, FiMoon, FiLogOut, FiX } from "react-icons/fi"
 import { MdMenu } from "react-icons/md"
 import { Button } from "@/components/ui/Button"
 import { useAuth } from "@/lib/auth"
+import { CurrencySwitcher } from "@/components/ui/CurrencySwitcher"
 
 const baseNavLinks = [
   { label: "Home", path: "/" },
@@ -85,6 +86,7 @@ export function Header() {
               placeholder="Search vehicles..." type="text" value={searchVal}
               onChange={(e) => setSearchVal(e.target.value)} onKeyDown={handleSearchKeyDown} />
           </div>
+          <CurrencySwitcher className="hidden sm:inline-flex" />
           <Button variant="ghost" size="icon" className="rounded-full" onClick={toggleTheme}>
             {isDark ? <FiSun className="text-xl" /> : <FiMoon className="text-xl" />}
           </Button>
@@ -112,6 +114,10 @@ export function Header() {
               <input className="bg-transparent border-none text-sm w-full ml-2 outline-none"
                 placeholder="Search vehicles..." value={searchVal}
                 onChange={(e) => setSearchVal(e.target.value)} onKeyDown={handleSearchKeyDown} />
+            </div>
+            <div className="flex items-center justify-between py-2 mb-1">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Currency</span>
+              <CurrencySwitcher />
             </div>
             {navLinks.map((link) => (
               <Link key={link.label} to={link.path}

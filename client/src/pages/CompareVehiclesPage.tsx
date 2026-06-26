@@ -4,6 +4,7 @@ import { FiPlus, FiX, FiArrowRight } from "react-icons/fi"
 import { Header } from "@/components/layout/Header"
 import { Footer } from "@/components/layout/Footer"
 import { useReviews } from "@/hooks/useApi"
+import { usePriceFormatter } from "@/lib/currency"
 import { FALLBACK_IMAGE } from "@/lib/constants"
 import type { Review } from "@/lib/types"
 
@@ -35,6 +36,7 @@ export default function CompareVehiclesPage() {
   // Pull the catalog once; pick from it (no hardcoded selection).
   const { data } = useReviews({ limit: 100, sort: "newest" })
   const catalog = data?.data ?? []
+  const fmtPrice = usePriceFormatter()
 
   const selected = useMemo(
     () => slugs.map((s) => catalog.find((r) => r.slug === s)).filter(Boolean) as Review[],
@@ -139,7 +141,7 @@ export default function CompareVehiclesPage() {
                         return (
                           <td key={r.id}
                             className={`p-4 border-l border-border text-sm font-archivo font-bold ${isWinner ? "bg-green-500/10 text-green-600" : ""}`}>
-                            {m.fmt(r)}{isWinner && <span className="ml-2 text-[9px] font-mono uppercase align-middle">Best</span>}
+                            {m.label === "Price" ? fmtPrice(r.specs?.price) : m.fmt(r)}{isWinner && <span className="ml-2 text-[9px] font-mono uppercase align-middle">Best</span>}
                           </td>
                         )
                       })}
