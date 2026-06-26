@@ -1,0 +1,9 @@
+{
+  "info": { "name": "Car Review API - Examples", "version": "1.0.0" },
+  "item": [
+    { "name": "Get published reviews", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/api/reviews" } } },
+    { "name": "Get review by slug", "request": { "method": "GET", "header": [], "url": { "raw": "{{baseUrl}}/api/reviews/:slug" } } },
+    { "name": "Admin - Create review", "request": { "method": "POST", "header": [ { "key": "Authorization", "value": "Bearer {{adminToken}}" } ], "url": { "raw": "{{baseUrl}}/api/admin/reviews" }, "body": { "mode": "raw", "raw": "{\n  \"title\": \"My Car\",\n  \"manufacturer\": \"Toyota\",\n  \"model\": \"Corolla\",\n  \"year\": 2020,\n  \"content\": {\"blocks\": []},\n  \"status\": \"published\"\n}" } } },
+    { "name": "Admin - Upload image", "request": { "method": "POST", "header": [ { "key": "Authorization", "value": "Bearer {{adminToken}}" } ], "url": { "raw": "{{baseUrl}}/api/upload/image" }, "body": { "mode": "formdata", "formdata": [ { "key": "image", "type": "file" }, { "key": "manufacturer", "value": "Toyota" }, { "key": "model", "value": "Corolla" } ] } } }
+  ]
+}

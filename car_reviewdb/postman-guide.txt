@@ -1,0 +1,109 @@
+Car Review API - Testing Guide
+
+Environment variables
+- baseUrl = http://localhost:4000
+- adminToken = <JWT for a profiles.role = "admin" user>
+
+Quick setup
+1. Create a Postman/Thunder Client environment with baseUrl and adminToken.
+2. For admin endpoints add header: Authorization: Bearer {{adminToken}}
+3. Public endpoints need no auth.
+
+Endpoints
+
+1) List published reviews
+- Method: GET
+- URL: {{baseUrl}}/api/reviews?page=1&limit=10
+- Query: page (optional), limit (optional)
+- Success: 200 JSON { success: true, data: [ { id, slug, title, excerpt, manufacturer, model, year, rating, published_at, ... } ] }
+- Errors: 500
+
+2) Get published review by slug
+- Method: GET
+- URL: {{baseUrl}}/api/reviews/:slug
+- Example URL: {{baseUrl}}/api/reviews/toyota-corolla-abc123
+- Success: 200 { success: true, data: { id, slug, title, content, ... } }
+- Not found: 404 or empty/error from DB
+
+3) Admin — Create review
+- Method: POST
+- URL: {{baseUrl}}/api/admin/reviews
+- Headers: Authorization: Bearer {{adminToken}}; Content-Type: application/json
+- Body (raw JSON):
+  {
+    "title":"2020 Corolla Review",
+    "excerpt":"Short summary",
+    "manufacturer":"Toyota",
+    "model":"Corolla",
+    "year":2020,
+    "content": { "blocks": [] },
+    "rating":4.5,
+    "status":"published",
+    "specs": { "engine":"2.0L", "horsepower":169 },
+    "gallery": [ { "image_url":"https://...", "alt_text":"front", "sort_order":0 } ]
+  }
+- Success: 201 { success: true, data: { ...created review... } }
+- Validation error: 400 (Zod errors)
+- Auth error: 401/403
+
+4) Admin — Update review
+- Method: PUT
+- URL: {{baseUrl}}/api/admin/reviews/:id
+- Headers: Authorization: Bearer {{adminToken}}; Content-Type: application/json
+- Body: any subset of create body fields (update validated)
+- Success: 200 { success: true, data: { ...updated... } }
+- Errors: 400/401/403/500
+
+5) Admin — Delete review
+- Method: DELETE
+- URL: {{baseUrl}}/api/admin/reviews/:id
+- Headers: Authorization: Bearer {{adminToken}}
+- Success: 200 { success: true, data: { id: "<deleted-id>" } }
+
+6) Admin — List all reviews (incl. drafts)
+- Method: GET
+- URL: {{baseUrl}}/api/admin/reviews?page=1&limit=20
+- Headers: Authorization: Bearer {{adminToken}}
+- Success: 200 { success: true, data: [ ... ] }
+
+7) Upload image
+- Method: POST
+- URL: {{baseUrl}}/api/upload/image
+- Headers: Authorization: Bearer {{adminToken}}
+- Body: form-data
+  - Key: image (type: file) — choose file
+  - Key: manufacturer (text) — e.g., Toyota
+  - Key: model (text) — e.g., Corolla
+- Success: 201 { success: true, data: { url: "https://..." } }
+- Errors: 400 (no file), 401/403 (auth), 500 (storage)
+
+cURL examples
+
+- Public list:
+  curl "{{baseUrl}}/api/reviews?page=1&limit=10"
+
+- Admin create:
+  curl -X POST "{{baseUrl}}/api/admin/reviews" \
+    -H "Authorization: Bearer $adminToken" \
+    -H "Content-Type: application/json" \
+    -d '{ "title":"My Car", "manufacturer":"Toyota", "model":"Corolla", "year":2020, "content":{} }'
+
+- Upload (form):
+  curl -X POST "{{baseUrl}}/api/upload/image" \
+    -H "Authorization: Bearer $adminToken" \
+    -F "image=@/path/to/file.jpg" \
+    -F "manufacturer=Toyota" \
+    -F "model=Corolla"
+
+Testing notes & troubleshooting
+- Ensure Supabase DB tables exist (run provided SQL migration) and Supabase keys in .env are correct.
+- adminToken must be a valid Supabase JWT for a profile with role='admin'. Use Supabase Auth to sign in and retrieve token or create a test user in profiles table and use service role flow to mint a token.
+- If you get 401 from admin endpoints, verify token format (Bearer <token>) and that the token maps to a profiles.id in DB with role=admin.
+- Uploads use Multer memory storage; large files may need adjusted express.json limits (app uses 5mb for JSON; file uploads use form-data with memory).
+
+Postman/Thunder Client import
+- Repo contains postman-collection.json; import it into Postman, set environment variables baseUrl and adminToken, then run requests.
+
+Notes
+- Replace {{baseUrl}} and {{adminToken}} with your environment values before running.
+- Use the Supabase SQL editor to run prisma/migrations/0001_init/migration.sql if DB tables are missing.

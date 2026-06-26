@@ -1,0 +1,156 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")   
+  directUrl = env("DIRECT_URL")     
+}
+
+enum ReviewStatus {
+  draft
+  published
+}
+
+enum CommentStatus {
+  approved
+  pending
+  spam
+}
+
+enum Condition {
+  new
+  used
+  certified
+}
+
+enum LeadStatus {
+  new
+  contacted
+  qualified
+  closed
+}
+
+model Profile {
+  id            String    @id @default(uuid()) @db.Uuid
+  email         String    @unique
+  password_hash String
+  full_name     String?
+  role          String    @default("user")
+  status        String    @default("active") // active | suspended
+  created_at    DateTime  @default(now())
+
+  Review     Review[]  @relation("ProfileReviews")
+  Comment    Comment[] @relation("ProfileComments")
+
+  @@map("profiles")
+}
+
+model Review {
+  id             String         @id @default(uuid()) @db.Uuid
+  slug           String         @unique
+  title          String
+  excerpt        String?
+  featured_image String?
+  manufacturer   String
+  model          String
+  year           Int
+  body_style     String?
+  condition      Condition      @default(used)
+  content        Json
+  rating         Float?
+  status         ReviewStatus   @default(draft)
+  featured       Boolean        @default(false)
+  views          Int            @default(0)
+  published_at   DateTime?
+  created_by     String         @db.Uuid
+  created_at     DateTime       @default(now())
+  updated_at     DateTime?
+  deleted_at     DateTime?
+
+  profile        Profile        @relation(fields: [created_by], references: [id], name: "ProfileReviews")
+  specs          ReviewSpec?
+  gallery        ReviewGallery[]
+  comments       Comment[]
+  leads          Lead[]
+
+  @@map("reviews")
+}
+
+model ReviewSpec {
+  id           String  @id @default(uuid()) @db.Uuid
+  review_id    String  @unique @db.Uuid
+  engine       String?
+  horsepower   Int?
+  torque       Int?
+  transmission String?
+  drivetrain   String?
+  fuel_type    String?
+  fuel_economy String?
+  top_speed    String?
+  acceleration String?
+  seating      Int?
+  mileage      Int?
+  price        Float?
+
+  review       Review  @relation(fields: [review_id], references: [id], onDelete: Cascade)
+
+  @@map("review_specs")
+}
+
+model ReviewGallery {
+  id        String  @id @default(uuid()) @db.Uuid
+  review_id String  @db.Uuid
+  image_url String
+  alt_text  String?
+  sort_order Int?
+
+  review    Review  @relation(fields: [review_id], references: [id], onDelete: Cascade)
+
+  @@map("review_gallery")
+}
+
+model Comment {
+  id           String        @id @default(uuid()) @db.Uuid
+  review_id    String        @db.Uuid
+  author_name  String
+  author_email String?
+  body         String
+  status       CommentStatus @default(pending)
+  created_by   String?       @db.Uuid
+  created_at   DateTime      @default(now())
+
+  review       Review        @relation(fields: [review_id], references: [id], onDelete: Cascade)
+  profile      Profile?      @relation(fields: [created_by], references: [id], name: "ProfileComments")
+
+  @@map("comments")
+}
+
+model Brand {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String   @unique
+  country      String?
+  founded_year Int?
+  logo_url     String?
+  description  String?
+  created_at   DateTime @default(now())
+
+  @@map("brands")
+}
+
+model Lead {
+  id                 String     @id @default(uuid()) @db.Uuid
+  review_id          String?    @db.Uuid
+  full_name          String
+  email              String
+  phone              String
+  message            String?
+  preferred_location String?
+  status             LeadStatus @default(new)
+  created_at         DateTime   @default(now())
+
+  review             Review?    @relation(fields: [review_id], references: [id], onDelete: SetNull)
+
+  @@map("leads")
+}
