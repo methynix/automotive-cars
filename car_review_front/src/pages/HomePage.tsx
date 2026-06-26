@@ -101,7 +101,7 @@ export default function HomePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
                 {filteredReviews.map((r, idx) => (
                   <Reveal key={r.id} animation="fade-up" delay={idx * 50}>
-                    <Link to={`/cars/${r.slug}`} className="group bg-white border border-border p-6 hover:border-primary transition-colors block h-full">
+                    <Link to={`/cars/${r.slug}`} className="group bg-card border border-border p-6 hover:border-primary transition-colors block h-full">
                       <div className="aspect-video overflow-hidden mb-6 relative">
                         <img src={r.featured_image || FALLBACK_IMAGE} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={r.title} />
                         <div className="absolute top-4 left-4 bg-primary text-white text-[10px] font-mono font-bold px-2 py-1 uppercase tracking-widest">
@@ -160,7 +160,7 @@ export default function HomePage() {
                   <Reveal animation="zoom-in" delay={200}>
                     <Link
                       to={`/cars/${reviews[0].slug}`}
-                      className="group grid grid-cols-1 lg:grid-cols-2 border border-border bg-white mb-px hover:border-primary transition-colors block"
+                      className="group grid grid-cols-1 lg:grid-cols-2 border border-border bg-card mb-px hover:border-primary transition-colors block"
                     >
                       <div className="aspect-[4/3] lg:aspect-auto overflow-hidden relative">
                         <img
@@ -203,7 +203,7 @@ export default function HomePage() {
                     <Reveal key={r.id} animation="fade-up" delay={100 + idx * 50}>
                       <Link
                         to={`/cars/${r.slug}`}
-                        className="group bg-white p-6 md:p-8 hover:bg-slate-50 transition-all duration-300 flex flex-col h-full"
+                        className="group bg-card p-6 md:p-8 hover:bg-muted/40 transition-all duration-300 flex flex-col h-full"
                       >
                         <div className="aspect-[4/3] overflow-hidden mb-6 relative">
                           <img
@@ -274,7 +274,7 @@ export default function HomePage() {
         <EditorialGrid reviews={reviews} />
 
         {/* NEWSLETTER — redesigned */}
-        <section className="py-20 bg-foreground relative overflow-hidden">
+        <section id="newsletter" className="py-20 bg-zinc-950 relative overflow-hidden">
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
           <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl" />
           <div className="px-6 md:px-12 max-w-[1280px] mx-auto relative">
@@ -326,17 +326,9 @@ export default function HomePage() {
                           onChange={(e) => setNewsletterEmail(e.target.value)}
                           required
                         />
-                        <button type="submit" className="w-full py-4 bg-primary text-white text-xs font-mono font-black uppercase tracking-[0.3em] hover:bg-white hover:text-foreground transition-all">
+                        <button type="submit" className="w-full py-4 bg-primary text-white text-xs font-mono font-black uppercase tracking-[0.3em] hover:bg-white hover:text-black transition-all">
                           Subscribe
                         </button>
-                        <a
-                          href="https://wa.me/"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block text-center w-full py-4 bg-primary text-white text-xs font-mono font-black uppercase tracking-[0.3em] hover:bg-white hover:text-foreground transition-all"
-                        >
-                          Join our WhatsApp channel
-                        </a>
                       </div>
                     )}
                     <p className="text-[9px] font-mono text-white/20 uppercase tracking-wider mt-4 text-center">

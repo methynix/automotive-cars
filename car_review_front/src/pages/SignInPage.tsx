@@ -4,9 +4,11 @@ import { FiEye, FiEyeOff } from "react-icons/fi"
 import { Header } from "@/components/layout/Header"
 import { Footer } from "@/components/layout/Footer"
 import { useAuth } from "@/lib/auth"
+import { useToast } from "@/lib/toast"
 
 export default function SignInPage() {
   const { login } = useAuth()
+  const toast = useToast()
   const navigate = useNavigate()
   const location = useLocation()
   const [email, setEmail] = useState("")
@@ -21,6 +23,7 @@ export default function SignInPage() {
     setLoading(true)
     try {
       const user = await login(email, password)
+      toast.success(`Welcome back${user.full_name ? ", " + user.full_name.split(" ")[0] : ""}!`)
       // Role-based redirect: staff go to the dashboard, customers go home
       // (or back to wherever they were heading).
       const from = (location.state as any)?.from

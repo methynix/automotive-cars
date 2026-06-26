@@ -33,7 +33,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!saved) { setLoading(false); return }
     api.getMe()
       .then((u) => { setUser(u); setTokenState(saved) })
-      .catch(() => logout())
+      .catch((err) => {
+        // Only log out if the token is genuinely rejected (401). A network
+        // error or a 5xx (e.g. the DB is momentarily unreachable) must NOT
+        // wipe the session — otherwise a transient blip logs the user out.
+        if (err instanceof api.ApiError && err.status === 401) {
+          logout()
+        } else {
+          setTokenState(saved) // keep the token; user can retry
+        }
+      })
       .finally(() => setLoading(false))
   }, [logout])
 

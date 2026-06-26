@@ -5,7 +5,8 @@ import type {
 } from "./types"
 
 const BASE_URL =
-  import.meta.env.VITE_API_URL
+  import.meta.env.VITE_API_URL ||
+  "https://car-reviewdb.onrender.com"
 
 const TOKEN_KEY = "fa_token"
 
@@ -48,6 +49,13 @@ async function apiFetch<T>(endpoint: string, opts: FetchOpts = {}): Promise<T> {
   }
 
   if (res.status === 401) {
+    // A 401 on the login/register endpoints means bad credentials — NOT an
+    // expired session. Don't wipe anything; let the caller show the real error.
+    const isAuthEntry = endpoint.startsWith("/api/auth/login") || endpoint.startsWith("/api/auth/register")
+    if (isAuthEntry) {
+      throw new ApiError("Invalid email or password.", 401)
+    }
+    // A 401 elsewhere means the stored token is genuinely invalid/expired.
     clearToken()
     window.dispatchEvent(new CustomEvent("auth:logout"))
     throw new ApiError("Your session has expired. Please sign in again.", 401)
@@ -79,6 +87,13 @@ async function apiFetchPaged<T>(endpoint: string, opts: FetchOpts = {}): Promise
     throw new ApiError("Network error — could not reach the server.", 0)
   }
   if (res.status === 401) {
+    // A 401 on the login/register endpoints means bad credentials — NOT an
+    // expired session. Don't wipe anything; let the caller show the real error.
+    const isAuthEntry = endpoint.startsWith("/api/auth/login") || endpoint.startsWith("/api/auth/register")
+    if (isAuthEntry) {
+      throw new ApiError("Invalid email or password.", 401)
+    }
+    // A 401 elsewhere means the stored token is genuinely invalid/expired.
     clearToken()
     window.dispatchEvent(new CustomEvent("auth:logout"))
     throw new ApiError("Your session has expired. Please sign in again.", 401)

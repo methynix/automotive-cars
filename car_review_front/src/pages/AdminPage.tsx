@@ -6,6 +6,7 @@ import {
 } from "react-icons/fi"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts"
 import { useAuth } from "@/lib/auth"
+import { useToast } from "@/lib/toast"
 import { uploadImage } from "@/lib/api"
 import {
   useAdminReviews, useCreateReview, useUpdateReview, useDeleteReview, useSetPublish,
@@ -168,6 +169,7 @@ function VehiclesTab() {
   const [editing, setEditing] = useState<Review | null>(null)
   const [open, setOpen] = useState(false)
   const { confirm, dialog } = useConfirm()
+  const toast = useToast()
 
   const rows = data?.data ?? []
 
@@ -176,7 +178,8 @@ function VehiclesTab() {
 
   const onDelete = async (r: Review) => {
     if (await confirm(`Delete "${r.title}"? It will be hidden from the site but can be restored from the database.`)) {
-      await deleteReview.mutateAsync(r.id)
+      try { await deleteReview.mutateAsync(r.id); toast.success("Vehicle deleted.") }
+      catch (e: any) { toast.error(e?.message || "Delete failed.") }
     }
   }
 
@@ -217,7 +220,7 @@ function VehiclesTab() {
                         <button
                           title={isPublished ? "Published — click to unpublish (hide from site)" : "Draft — click to publish (make live)"}
                           disabled={pendingThis}
-                          onClick={() => setPublish.mutate({ id: r.id, status: isPublished ? "draft" : "published" })}
+                          onClick={() => setPublish.mutate({ id: r.id, status: isPublished ? "draft" : "published" }, { onSuccess: () => toast.success(isPublished ? "Moved to draft." : "Published — now live."), onError: (e: any) => toast.error(e?.message || "Could not update.") })}
                           className={`inline-flex items-center gap-1.5 text-[10px] font-mono uppercase px-2.5 py-1.5 border transition-colors disabled:opacity-60 ${
                             isPublished ? "border-green-600 text-green-600 hover:bg-green-600/10" : "border-muted-foreground/40 text-muted-foreground hover:bg-muted"
                           }`}
@@ -249,9 +252,11 @@ function VehiclesTab() {
           saving={createReview.isPending || updateReview.isPending}
           onClose={() => setOpen(false)}
           onSave={async (payload) => {
-            if (editing) await updateReview.mutateAsync({ id: editing.id, data: payload })
-            else await createReview.mutateAsync(payload)
-            setOpen(false)
+            try {
+              if (editing) { await updateReview.mutateAsync({ id: editing.id, data: payload }); toast.success("Vehicle updated.") }
+              else { await createReview.mutateAsync(payload); toast.success("Vehicle created.") }
+              setOpen(false)
+            } catch (e: any) { toast.error(e?.message || "Save failed.") }
           }}
         />
       )}
@@ -417,14 +422,17 @@ function BrandsTab() {
   const updateBrand = useUpdateBrand()
   const deleteBrand = useDeleteBrand()
   const { confirm, dialog } = useConfirm()
+  const toast = useToast()
   const [form, setForm] = useState<{ id?: string; name: string; country: string; founded_year: string }>({ name: "", country: "", founded_year: "" })
 
   const save = async () => {
     if (form.name.trim().length < 1) return
     const payload = { name: form.name.trim(), country: form.country || null, founded_year: form.founded_year ? parseInt(form.founded_year) : null }
-    if (form.id) await updateBrand.mutateAsync({ id: form.id, data: payload })
-    else await createBrand.mutateAsync(payload)
-    setForm({ name: "", country: "", founded_year: "" })
+    try {
+      if (form.id) { await updateBrand.mutateAsync({ id: form.id, data: payload }); toast.success("Brand updated.") }
+      else { await createBrand.mutateAsync(payload); toast.success("Brand added.") }
+      setForm({ name: "", country: "", founded_year: "" })
+    } catch (e: any) { toast.error(e?.message || "Could not save brand.") }
   }
   const edit = (b: Brand) => setForm({ id: b.id, name: b.name, country: b.country || "", founded_year: b.founded_year?.toString() || "" })
 
@@ -445,7 +453,7 @@ function BrandsTab() {
               <div><span className="font-archivo font-bold">{b.name}</span> <span className="text-xs font-mono text-muted-foreground">{b.country}{b.founded_year ? ` · ${b.founded_year}` : ""}</span></div>
               <div className="flex gap-2">
                 <button onClick={() => edit(b)} className="p-2 border border-border hover:border-primary"><FiEdit size={14} /></button>
-                <button onClick={async () => { if (await confirm(`Delete brand "${b.name}"? Vehicles keep their manufacturer text.`)) deleteBrand.mutate(b.id) }} className="p-2 border border-border hover:border-primary text-primary"><FiTrash2 size={14} /></button>
+                <button onClick={async () => { if (await confirm(`Delete brand "${b.name}"? Vehicles keep their manufacturer text.`)) deleteBrand.mutate(b.id, { onSuccess: () => toast.success("Brand deleted."), onError: (e: any) => toast.error(e?.message || "Delete failed.") }) }} className="p-2 border border-border hover:border-primary text-primary"><FiTrash2 size={14} /></button>
               </div>
             </div>
           ))}
@@ -462,6 +470,7 @@ function LeadsTab() {
   const updateLead = useUpdateLead()
   const deleteLead = useDeleteLead()
   const { confirm, dialog } = useConfirm()
+  const toast = useToast()
   const rows = data?.data ?? []
   const statuses = ["new", "contacted", "qualified", "closed"] as const
 
@@ -481,12 +490,12 @@ function LeadsTab() {
                   <td className="p-3 text-xs font-mono">{l.review ? `${l.review.manufacturer} ${l.review.model}` : "—"}</td>
                   <td className="p-3 text-xs">{l.preferred_location || "—"}</td>
                   <td className="p-3">
-                    <select value={l.status} onChange={(e) => updateLead.mutate({ id: l.id, status: e.target.value as any })}
+                    <select value={l.status} onChange={(e) => updateLead.mutate({ id: l.id, status: e.target.value as any }, { onSuccess: () => toast.success("Lead status updated.") })}
                       className="border border-border bg-background px-2 py-1 text-xs font-mono uppercase">
                       {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </td>
-                  <td className="p-3 text-right"><button onClick={async () => { if (await confirm(`Delete the lead from ${l.full_name}?`)) deleteLead.mutate(l.id) }} className="p-2 border border-border hover:border-primary text-primary"><FiTrash2 size={14} /></button></td>
+                  <td className="p-3 text-right"><button onClick={async () => { if (await confirm(`Delete the lead from ${l.full_name}?`)) deleteLead.mutate(l.id, { onSuccess: () => toast.success("Lead deleted.") }) }} className="p-2 border border-border hover:border-primary text-primary"><FiTrash2 size={14} /></button></td>
                 </tr>
               ))}
               {rows.length === 0 && <tr><td colSpan={5} className="p-8 text-center text-muted-foreground font-mono text-xs">No leads yet.</td></tr>}
@@ -505,6 +514,7 @@ function UsersTab({ currentUserId }: { currentUserId: string }) {
   const updateUser = useUpdateUser()
   const deleteUser = useDeleteUser()
   const { confirm, dialog } = useConfirm()
+  const toast = useToast()
   const rows = data?.data ?? []
   const roles = ["user", "editor", "admin"]
 
@@ -523,20 +533,20 @@ function UsersTab({ currentUserId }: { currentUserId: string }) {
                   <td className="p-3"><div className="font-archivo font-bold">{u.full_name || "—"}</div><div className="text-[10px] font-mono text-muted-foreground">{u.email}</div></td>
                   <td className="p-3">
                     <select value={u.role} disabled={u.id === currentUserId}
-                      onChange={(e) => updateUser.mutate({ id: u.id, data: { role: e.target.value } })}
+                      onChange={(e) => updateUser.mutate({ id: u.id, data: { role: e.target.value } }, { onSuccess: () => toast.success("Role updated.") })}
                       className="border border-border bg-background px-2 py-1 text-xs font-mono uppercase disabled:opacity-50">
                       {roles.map((r) => <option key={r} value={r}>{r}</option>)}
                     </select>
                   </td>
                   <td className="p-3">
                     <button disabled={u.id === currentUserId}
-                      onClick={() => updateUser.mutate({ id: u.id, data: { status: u.status === "suspended" ? "active" : "suspended" } })}
+                      onClick={() => updateUser.mutate({ id: u.id, data: { status: u.status === "suspended" ? "active" : "suspended" } }, { onSuccess: () => toast.success("User status updated.") })}
                       className={`text-[10px] font-mono uppercase px-2 py-1 border disabled:opacity-50 ${u.status === "suspended" ? "border-primary text-primary" : "border-green-600 text-green-600"}`}>
                       {u.status === "suspended" ? "Suspended" : "Active"}
                     </button>
                   </td>
                   <td className="p-3 text-right">
-                    <button disabled={u.id === currentUserId} onClick={async () => { if (await confirm(`Delete user ${u.email}? This permanently removes their account.`)) deleteUser.mutate(u.id) }}
+                    <button disabled={u.id === currentUserId} onClick={async () => { if (await confirm(`Delete user ${u.email}? This permanently removes their account.`)) deleteUser.mutate(u.id, { onSuccess: () => toast.success("User deleted."), onError: (e: any) => toast.error(e?.message || "Delete failed.") }) }}
                       className="p-2 border border-border hover:border-primary text-primary disabled:opacity-30"><FiTrash2 size={14} /></button>
                   </td>
                 </tr>

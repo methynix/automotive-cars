@@ -4,6 +4,7 @@ import { FiEye, FiEyeOff, FiCheck, FiX } from "react-icons/fi"
 import { Header } from "@/components/layout/Header"
 import { Footer } from "@/components/layout/Footer"
 import { useAuth } from "@/lib/auth"
+import { useToast } from "@/lib/toast"
 
 // Password rules for an app that stores personal data.
 function scorePassword(pw: string) {
@@ -17,6 +18,7 @@ function scorePassword(pw: string) {
 
 export default function SignUpPage() {
   const { register } = useAuth()
+  const toast = useToast()
   const navigate = useNavigate()
   const location = useLocation()
   const [fullName, setFullName] = useState("")
@@ -41,6 +43,7 @@ export default function SignUpPage() {
       // Public sign-up always creates a CUSTOMER account (role: user).
       // Admin/editor roles can only be granted by an existing admin.
       const user = await register(email, password, fullName)
+      toast.success("Account created — welcome to Future Automotive!")
       const from = (location.state as any)?.from
       navigate(user.role === "admin" || user.role === "editor" ? "/admin" : (from || "/"))
     } catch (err: any) {
