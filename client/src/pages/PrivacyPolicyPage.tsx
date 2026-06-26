@@ -2,7 +2,7 @@ import { Header } from "@/components/layout/Header"
 import { Footer } from "@/components/layout/Footer"
 
 const sections = [
-  ["What we collect", "When you create an account, book a test drive, comment, or subscribe, we collect the details you give us — typically your name, email address and phone number. We also collect basic usage data such as the vehicles you view."],
+  ["What we collect", "When you create an account, book a test drive, comment, or subscribe, we collect the details you give us  typically your name, email address and phone number. We also collect basic usage data such as the vehicles you view."],
   ["How we use it", "We use your information to operate the site, respond to test-drive and sales enquiries, send updates you have asked for, and moderate comments. Phone numbers provided for enquiries may be used to contact you about the specific vehicle you asked about."],
   ["Sharing", "We do not sell your personal data. We share it only with service providers that help us run the site (for example hosting and storage), and where required by law."],
   ["Your choices", "You can request access to, correction of, or deletion of your data at any time by contacting us. You can unsubscribe from marketing messages whenever you like."],
