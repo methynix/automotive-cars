@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/Button"
 import { getReviews } from "@/lib/api"
 import type { Review } from "@/lib/types"
 import { CATEGORY_IMAGES, FALLBACK_IMAGE } from "@/lib/constants"
-import { FiSearch, FiArrowRight, FiStar, FiZap } from "react-icons/fi"
+import { FiArrowRight, FiStar, FiZap } from "react-icons/fi"
 import { Reveal } from "@/components/ui/Reveal"
 
 export default function HomePage() {
@@ -55,32 +55,6 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-background font-inter selection:bg-primary selection:text-white">
       
-      {/* GLOBAL SEARCH OVERLAY / TOP BAR */}
-      <section className="bg-foreground text-background py-3 px-6 md:px-12 border-b border-white/10">
-        <div className="max-w-[1280px] mx-auto flex flex-col md:flex-row items-center gap-4">
-          <span className="text-[10px] font-mono font-black uppercase tracking-[0.3em] text-primary whitespace-nowrap">Global Search</span>
-          <div className="relative flex-1 w-full">
-            <FiSearch className="absolute left-0 top-1/2 -translate-y-1/2 text-primary" />
-            <input 
-              type="text" 
-              placeholder="SEARCH BY BRAND, MODEL, OR KEYWORD..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-transparent border-none pl-8 pr-4 py-2 text-xs font-mono font-bold uppercase tracking-widest placeholder:text-white/20 outline-none focus:ring-0"
-            />
-          </div>
-          <div className="hidden lg:flex items-center gap-6 text-[10px] font-mono text-white/40 uppercase tracking-widest">
-            <span>Quick:</span>
-            <button onClick={() => setSearchQuery("BYD")} className="hover:text-primary transition-colors font-black">BYD</button>
-            <button onClick={() => setSearchQuery("NIO")} className="hover:text-primary transition-colors font-black">NIO</button>
-            <button onClick={() => setSearchQuery("Electric")} className="hover:text-primary transition-colors font-black">EV</button>
-            {searchQuery && (
-              <button onClick={() => setSearchQuery("")} className="text-primary font-black ml-4">CLEAR ×</button>
-            )}
-          </div>
-        </div>
-      </section>
-
       <Header />
       
       <main>

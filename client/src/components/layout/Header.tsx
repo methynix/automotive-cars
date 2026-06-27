@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { FiSearch, FiUser, FiSun, FiMoon, FiLogOut, FiX } from "react-icons/fi"
 import { MdMenu } from "react-icons/md"
@@ -10,15 +10,12 @@ const baseNavLinks = [
   { label: "Home", path: "/" },
   { label: "Cars", path: "/cars" },
   { label: "News", path: "/news" },
+  { label: "Brands", path: "/brands" },
   { label: "Compare", path: "/compare" },
 ]
 
 export function Header() {
-  const { user, logout, isAuthenticated, isStaff } = useAuth()
-  const navLinks = useMemo(
-    () => (isStaff ? [...baseNavLinks, { label: "Admin", path: "/admin" }] : baseNavLinks),
-    [isStaff]
-  )
+  const { user, logout, isAuthenticated } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const [isDark, setIsDark] = useState(false)
@@ -37,7 +34,6 @@ export function Header() {
     }
   }, [])
 
-  // Close the mobile menu whenever the route changes.
   useEffect(() => { setMenuOpen(false) }, [location.pathname])
 
   const toggleTheme = () => {
@@ -65,7 +61,7 @@ export function Header() {
             </span>
           </Link>
           <div className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => (
+            {baseNavLinks.map((link) => (
               <Link key={link.label}
                 className={`text-sm font-mono transition-all ${
                   isActive(link.path)
@@ -80,12 +76,6 @@ export function Header() {
         </div>
 
         <div className="flex items-center gap-2 md:gap-4">
-          <div className="hidden lg:flex items-center bg-muted/50 px-4 py-2 rounded-full border border-border/50">
-            <button onClick={runSearch} aria-label="Search"><FiSearch className="text-muted-foreground hover:text-primary transition-colors" /></button>
-            <input className="bg-transparent border-none focus:ring-0 text-xs placeholder-muted-foreground/50 w-48 ml-2 outline-none"
-              placeholder="Search vehicles..." type="text" value={searchVal}
-              onChange={(e) => setSearchVal(e.target.value)} onKeyDown={handleSearchKeyDown} />
-          </div>
           <CurrencySwitcher className="hidden sm:inline-flex" />
           <Button variant="ghost" size="icon" className="rounded-full" onClick={toggleTheme}>
             {isDark ? <FiSun className="text-xl" /> : <FiMoon className="text-xl" />}
@@ -98,7 +88,6 @@ export function Header() {
           ) : (
             <Link to="/signin"><Button variant="ghost" size="icon" className="rounded-full"><FiUser className="text-xl" /></Button></Link>
           )}
-          {/* Mobile menu toggle */}
           <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMenuOpen((o) => !o)} aria-label="Menu">
             {menuOpen ? <FiX className="text-2xl" /> : <MdMenu className="text-2xl" />}
           </Button>
@@ -108,7 +97,7 @@ export function Header() {
       {/* Mobile drawer */}
       {menuOpen && (
         <div className="md:hidden border-t border-border bg-background">
-          <div className="px-5 py-4 flex flex-col gap-1">
+          <div className="px-5 max-w-[1280px] mx-auto py-4 flex flex-col gap-1">
             <div className="flex items-center bg-muted/50 px-4 py-2.5 rounded-full border border-border/50 mb-3">
               <FiSearch className="text-muted-foreground" />
               <input className="bg-transparent border-none text-sm w-full ml-2 outline-none"
@@ -119,7 +108,7 @@ export function Header() {
               <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Currency</span>
               <CurrencySwitcher />
             </div>
-            {navLinks.map((link) => (
+            {baseNavLinks.map((link) => (
               <Link key={link.label} to={link.path}
                 className={`py-3 px-2 text-sm font-mono uppercase tracking-widest border-b border-border/40 ${
                   isActive(link.path) ? "text-primary font-bold" : "text-foreground/80"

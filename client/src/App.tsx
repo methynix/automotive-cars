@@ -6,6 +6,7 @@ import HomePage from "@/pages/HomePage"
 import CarDetailsPage from "@/pages/CarDetailsPage"
 import CarListingsPage from "@/pages/CarListingsPage"
 import CompareVehiclesPage from "@/pages/CompareVehiclesPage"
+import BrandsPage from "@/pages/BrandsPage"
 import NewsPage from "@/pages/NewsPage"
 import AdminPage from "@/pages/AdminPage"
 import SignInPage from "@/pages/SignInPage"
@@ -27,6 +28,7 @@ function App() {
               <Route path="/cars" element={<CarListingsPage />} />
               <Route path="/cars/:id" element={<CarDetailsPage />} />
               <Route path="/compare" element={<CompareVehiclesPage />} />
+              <Route path="/brands" element={<BrandsPage />} />
               <Route path="/signin" element={<SignInPage />} />
               <Route path="/signup" element={<SignUpPage />} />
               <Route path="/contact" element={<ContactPage />} />

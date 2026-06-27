@@ -14,7 +14,7 @@ export function Hero({ reviews }: HeroProps) {
     <section className="relative h-[800px] w-full overflow-hidden flex items-end bg-black">
       <video
         className="absolute inset-0 w-full h-full object-cover"
-        src="/Unleash%20the%20Future%20with%20BYD%20Seal%20(2160p_25fps_AV1-128kbit_AAC).mp4"
+        src="ad.mp4"
         poster={FALLBACK_IMAGE_HERO}
         preload="metadata"
         autoPlay
