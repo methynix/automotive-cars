@@ -5,6 +5,7 @@ import { Footer } from "@/components/layout/Footer"
 import { usePriceFormatter } from "@/lib/currency"
 import { Hero } from "@/components/sections/Hero"
 import { BrandMarquee } from "@/components/sections/BrandMarquee"
+import { FeatureCards } from "@/components/sections/FeatureCards"
 import { EditorialGrid } from "@/components/sections/EditorialGrid"
 import { Button } from "@/components/ui/Button"
 import { getReviews } from "@/lib/api"
@@ -109,6 +110,10 @@ export default function HomePage() {
             <Hero reviews={reviews.slice(0, 3)} />
             
             <BrandMarquee />
+
+            <div className="px-6 py-10 md:hidden bg-background">
+              <FeatureCards className="flex" />
+            </div>
 
             {/* EXPLORE THE FLEET — redesigned */}
             <section className="py-16 md:py-20">
