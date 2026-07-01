@@ -8,7 +8,7 @@ const OPTIONS: { value: BaseCurrency; label: string }[] = [
 export function CurrencySwitcher({ className = "" }: { className?: string }) {
   const { base, setBase } = useCurrency()
   return (
-    <div className={`inline-flex border border-border -skew-x-[8deg] ${className}`}>
+    <div className={`inline-flex border border-border ${className}`}>
       {OPTIONS.map((o) => (
         <button
           key={o.value}
@@ -18,7 +18,7 @@ export function CurrencySwitcher({ className = "" }: { className?: string }) {
             base === o.value ? "bg-foreground text-background" : "bg-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
-          <div className="skew-x-[8deg]">{o.label}</div>
+          <div>{o.label}</div>
         </button>
       ))}
     </div>

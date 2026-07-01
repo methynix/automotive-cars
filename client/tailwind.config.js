@@ -58,6 +58,7 @@ export default {
         archivo: ["Archivo Narrow", "sans-serif"],
         inter: ["Inter", "sans-serif"],
         mono: ["JetBrains Mono", "monospace"],
+        "science-gothic": ["Science Gothic", "sans-serif"],
       },
       keyframes: {
         "accordion-down": {

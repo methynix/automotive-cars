@@ -13,7 +13,7 @@ export function BrandMarquee() {
         {[...Array(2)].map((_, i) => (
           <div key={i} className="flex flex-shrink-0 items-center space-x-16 px-8">
             {brands.map((brand, j) => (
-              <span key={`${i}-${j}`} className="text-4xl md:text-5xl font-archivo font-black uppercase text-muted-foreground/30 hover:text-muted-foreground/80 transition-colors cursor-default select-none">
+              <span key={`${i}-${j}`} className="text-4xl md:text-5xl science-gothic-logo font-light uppercase text-muted-foreground/30 hover:text-muted-foreground/80 transition-colors cursor-default select-none">
                 {brand}
               </span>
             ))}
