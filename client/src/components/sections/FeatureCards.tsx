@@ -28,7 +28,7 @@ export function FeatureCards({ className = "" }: { className?: string }) {
   return (
     <div className={`flex flex-col md:flex-row gap-6 ${className}`}>
       {cardData.map(card => (
-        <div key={card.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-md flex-1 flex flex-col group">
+        <div key={card.id} className="bg-background border border-border rounded-lg overflow-hidden shadow-md flex-1 flex flex-col group">
           <div className="overflow-hidden">
             <img 
               src={card.imageSrc} 
@@ -38,10 +38,10 @@ export function FeatureCards({ className = "" }: { className?: string }) {
           </div>
           <div className="px-4 pt-4 pb-2 flex flex-row items-center justify-between gap-4">
             <div className="py-1">
-              <h3 className="text-lg font-bold mb-1 text-gray-900">{card.heading}</h3>
-              <p className="text-gray-700 text-sm leading-snug pb-2">{card.description}</p>
+              <h3 className="text-lg font-bold mb-1 text-foreground">{card.heading}</h3>
+              <p className="text-muted-foreground text-sm leading-snug pb-2">{card.description}</p>
             </div>
-            <button className="flex-shrink-0 p-3 bg-white border border-gray-300 rounded-full text-black hover:bg-gray-100 transition-colors">
+            <button className="flex-shrink-0 p-3 bg-background border border-border rounded-full text-foreground hover:bg-muted transition-colors">
               <FiArrowRight className="w-4 h-4" />
             </button>
           </div>

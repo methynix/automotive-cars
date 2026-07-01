@@ -21,6 +21,7 @@ export function Header() {
   const [isDark, setIsDark] = useState(false)
   const [searchVal, setSearchVal] = useState("")
   const [menuOpen, setMenuOpen] = useState(false)
+  const [desktopModalOpen, setDesktopModalOpen] = useState(false)
 
   useEffect(() => {
     const saved = localStorage.getItem("theme")
@@ -76,20 +77,11 @@ export function Header() {
         </div>
 
         <div className="flex items-center gap-2 md:gap-4">
-          <CurrencySwitcher className="hidden sm:inline-flex" />
-          <Button variant="ghost" size="icon" className="hidden md:flex rounded-full" onClick={toggleTheme}>
-            {isDark ? <FiSun className="text-xl" /> : <FiMoon className="text-xl" />}
-          </Button>
-          {isAuthenticated ? (
-            <div className="hidden md:flex items-center gap-2">
-              <span className="hidden lg:block text-xs font-mono text-muted-foreground">{user?.full_name || user?.email}</span>
-              <Button variant="ghost" size="icon" className="rounded-full" onClick={logout}><FiLogOut className="text-xl" /></Button>
-            </div>
-          ) : (
-            <Link to="/signin" className="hidden md:block"><Button variant="ghost" size="icon" className="rounded-full"><FiUser className="text-xl" /></Button></Link>
-          )}
           <Button size="icon" className="md:hidden bg-red-600 hover:bg-red-700 text-white rounded-md" onClick={() => setMenuOpen((o) => !o)} aria-label="Menu">
             {menuOpen ? <FiX className="text-2xl" /> : <MdMenu className="text-2xl" />}
+          </Button>
+          <Button size="icon" className="hidden md:flex bg-red-600 hover:bg-red-700 text-white rounded-md" onClick={() => setDesktopModalOpen(true)} aria-label="Settings">
+            <MdMenu className="text-2xl" />
           </Button>
         </div>
       </nav>
@@ -111,11 +103,26 @@ export function Header() {
             <span className="text-sm font-mono uppercase tracking-widest text-foreground/80">Currency</span>
             <CurrencySwitcher />
           </div>
-          <div className="flex items-center justify-between py-3 px-2 border-b border-border/40">
+          <div className="flex flex-col items-start gap-3 py-3 px-2 border-b border-border/40 pb-4">
             <span className="text-sm font-mono uppercase tracking-widest text-foreground/80">Theme</span>
-            <Button variant="outline" size="sm" onClick={toggleTheme} className="rounded-full flex items-center gap-2 h-8 px-3">
-              {isDark ? <><FiSun className="text-sm" /> Light Mode</> : <><FiMoon className="text-sm" /> Dark Mode</>}
-            </Button>
+            <div className="inline-flex border border-border">
+              <button
+                onClick={() => { if (isDark) toggleTheme(); }}
+                className={`px-4 py-1.5 text-[10px] font-mono font-bold uppercase tracking-widest transition-colors ${
+                  !isDark ? "bg-foreground text-background" : "bg-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Light Mode
+              </button>
+              <button
+                onClick={() => { if (!isDark) toggleTheme(); }}
+                className={`px-4 py-1.5 text-[10px] font-mono font-bold uppercase tracking-widest transition-colors ${
+                  isDark ? "bg-foreground text-background" : "bg-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Dark Mode
+              </button>
+            </div>
           </div>
           {baseNavLinks.map((link) => (
             <Link key={link.label} to={link.path} onClick={() => setMenuOpen(false)}
@@ -126,7 +133,7 @@ export function Header() {
             </Link>
           ))}
           {!isAuthenticated ? (
-            <Link to="/signin" onClick={() => setMenuOpen(false)} className="py-3 px-2 text-sm font-mono uppercase tracking-widest text-primary font-bold">Sign in</Link>
+            <Link to="/signin" onClick={() => setMenuOpen(false)} className="py-3 px-2 text-sm font-mono uppercase tracking-widest text-primary font-bold">ADMIN</Link>
           ) : (
             <>
               {(user?.role === "admin" || user?.role === "operator") && (
@@ -137,6 +144,72 @@ export function Header() {
           )}
         </div>
       </div>
+
+      {/* Desktop Dropdown */}
+      {desktopModalOpen && (
+        <>
+          {/* Click away overlay */}
+          <div className="hidden md:block fixed inset-0 w-screen h-screen z-[-1]" onClick={() => setDesktopModalOpen(false)} />
+          
+          <div className="hidden md:block absolute top-full right-5 md:right-12 mt-2 w-[320px] bg-background border border-border shadow-2xl p-6 z-[200] animate-in fade-in slide-in-from-top-4 duration-200">
+            <h3 className="text-lg font-archivo font-bold uppercase mb-5 tracking-tighter border-b border-border/40 pb-3">Settings</h3>
+            
+            <div className="space-y-4">
+              <div className="flex flex-col items-start gap-3">
+                <span className="text-sm font-mono uppercase tracking-widest text-foreground/80">Currency</span>
+                <CurrencySwitcher />
+              </div>
+              
+              <div className="flex flex-col items-start gap-3 border-b border-border/40 pb-4">
+                <span className="text-sm font-mono uppercase tracking-widest text-foreground/80">Theme</span>
+                <div className="inline-flex border border-border">
+                  <button
+                    onClick={() => { if (isDark) toggleTheme(); }}
+                    className={`px-4 py-1.5 text-[10px] font-mono font-bold uppercase tracking-widest transition-colors ${
+                      !isDark ? "bg-foreground text-background" : "bg-transparent text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Light Mode
+                  </button>
+                  <button
+                    onClick={() => { if (!isDark) toggleTheme(); }}
+                    className={`px-4 py-1.5 text-[10px] font-mono font-bold uppercase tracking-widest transition-colors ${
+                      isDark ? "bg-foreground text-background" : "bg-transparent text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Dark Mode
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-col items-start w-full">
+                {!isAuthenticated ? (
+                  <Link to="/signin" onClick={() => setDesktopModalOpen(false)} className="flex items-center justify-start gap-3 w-full p-3 bg-muted/50 hover:bg-muted text-primary font-bold transition-colors">
+                    <FiUser className="text-xl" />
+                    <span className="text-sm font-mono uppercase tracking-widest">ADMIN</span>
+                  </Link>
+                ) : (
+                  <div className="space-y-3 w-full">
+                    <div className="px-3 py-2 bg-muted/30 border border-border/50">
+                      <p className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest mb-1">Signed in as</p>
+                      <p className="font-bold truncate text-sm">{user?.full_name || user?.email}</p>
+                    </div>
+                    {(user?.role === "admin" || user?.role === "operator") && (
+                      <Link to="/app" onClick={() => setDesktopModalOpen(false)} className="flex items-center justify-start w-full p-3 bg-primary text-primary-foreground font-bold hover:bg-primary/90 transition-colors">
+                        <span className="text-sm font-mono uppercase tracking-widest">Dashboard</span>
+                      </Link>
+                    )}
+                    <button onClick={() => { logout(); setDesktopModalOpen(false); }} className="flex items-center justify-start gap-2 w-full p-3 border border-destructive text-destructive font-bold hover:bg-destructive/10 transition-colors">
+                      <FiLogOut className="text-lg" />
+                      <span className="text-sm font-mono uppercase tracking-widest">Logout</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </header>
     </>
   )

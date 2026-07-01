@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import type { Review } from "@/lib/types";
 import { FALLBACK_IMAGE_HERO } from "@/lib/constants";
 import { FeatureCards } from "@/components/sections/FeatureCards";
@@ -23,11 +22,13 @@ export function Hero({ reviews }: HeroProps) {
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
       <div className="relative z-10 w-full px-6 md:px-12 max-w-[1280px] mx-auto pb-8">
         <div className="max-w-2xl mb-10">
-          <h1 className="text-6xl md:text-8xl font-archivo font-extrabold text-white mb-6 leading-[0.9] tracking-normal uppercase">
-            FUTURE <br /> AUTOMOTIVE
+          <h1 className="text-5xl md:text-[4rem] font-archivo font-extrabold text-white mb-6 leading-[0.9] tracking-normal uppercase">
+            FUTURE <br /> <span className="text-[#C91F20]">AUTOMOTIVE</span>
           </h1>
           <p className="text-lg md:text-xl text-white/80 max-w-lg mb-8 font-inter">
-            Where technical precision meets elite automotive journalism. Explore the engineering, the icons, and the future of high-performance electric machines.
+            Where technical precision meets elite automotive journalism. Explore
+            the engineering, the icons, and the future of high-performance
+            electric machines.
           </p>
         </div>
 
