@@ -119,10 +119,13 @@ model Comment {
   body         String
   status       CommentStatus @default(pending)
   created_by   String?       @db.Uuid
+  parent_id    String?       @db.Uuid
   created_at   DateTime      @default(now())
 
   review       Review        @relation(fields: [review_id], references: [id], onDelete: Cascade)
   profile      Profile?      @relation(fields: [created_by], references: [id], name: "ProfileComments")
+  parent       Comment?      @relation("CommentReplies", fields: [parent_id], references: [id])
+  replies      Comment[]     @relation("CommentReplies")
 
   @@map("comments")
 }
@@ -148,9 +151,18 @@ model Lead {
   message            String?
   preferred_location String?
   status             LeadStatus @default(new)
+  internal_notes     String?
   created_at         DateTime   @default(now())
 
   review             Review?    @relation(fields: [review_id], references: [id], onDelete: SetNull)
 
   @@map("leads")
+}
+
+model Setting {
+  key        String   @id
+  value      Json
+  updated_at DateTime @updatedAt
+
+  @@map("settings")
 }

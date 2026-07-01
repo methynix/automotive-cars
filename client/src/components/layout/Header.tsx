@@ -51,11 +51,9 @@ export function Header() {
 
   return (
     <header className="bg-background/80 backdrop-blur-md sticky top-0 z-50 border-b border-border">
-      <nav className="flex justify-between items-center w-full px-5 md:px-12 max-w-[1280px] mx-auto h-16 md:h-20">
+      <nav className="flex justify-between items-center w-full px-5 md:px-12 max-w-[1400px] mx-auto h-16 md:h-20">
         <div className="flex items-center gap-8 lg:gap-12">
           <Link className="flex items-center gap-2.5 text-foreground" to="/">
-            <img src="/logo.jpg" alt="Future Automotive" className="h-8 w-8 md:h-9 md:w-9 object-contain rounded-sm"
-              onError={(e) => { (e.target as HTMLImageElement).style.display = "none" }} />
             <span className="text-lg md:text-2xl font-archivo font-extrabold tracking-tighter uppercase whitespace-nowrap">
               Future Automotive
             </span>
@@ -97,7 +95,7 @@ export function Header() {
       {/* Mobile drawer */}
       {menuOpen && (
         <div className="md:hidden border-t border-border bg-background">
-          <div className="px-5 max-w-[1280px] mx-auto py-4 flex flex-col gap-1">
+          <div className="px-5 max-w-[1400px] mx-auto py-4 flex flex-col gap-1">
             <div className="flex items-center bg-muted/50 px-4 py-2.5 rounded-full border border-border/50 mb-3">
               <FiSearch className="text-muted-foreground" />
               <input className="bg-transparent border-none text-sm w-full ml-2 outline-none"

@@ -101,11 +101,14 @@ export interface Comment {
   body: string
   status: CommentStatus
   created_at: string
+  parent_id?: string | null
 }
 export interface CommentInput {
   author_name: string
   author_email?: string
   body: string
+  parent_id?: string
+  status?: CommentStatus
 }
 
 export interface Brand {
@@ -134,6 +137,7 @@ export interface Lead {
   message?: string | null
   preferred_location?: string | null
   status: LeadStatus
+  internal_notes?: string
   created_at: string
   review?: { title: string; slug: string; manufacturer: string; model: string } | null
 }
@@ -164,6 +168,7 @@ export interface Analytics {
     views: number; avgRating: number
   }
   topReviews: { name: string; views: number; slug: string }[]
+  recentActivity: any[]
 }
 
 export interface Paginated<T> {

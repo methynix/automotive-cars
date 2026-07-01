@@ -13,7 +13,7 @@ export const LeadController = {
     } catch (err) { next(err); }
   },
   async update(req, res, next) {
-    try { return success(res, await LeadService.updateStatus(req.params.id, req.body.status)); } catch (err) { next(err); }
+    try { return success(res, await LeadService.update(req.params.id, req.body)); } catch (err) { next(err); }
   },
   async remove(req, res, next) {
     try { return success(res, await LeadService.remove(req.params.id)); } catch (err) { next(err); }

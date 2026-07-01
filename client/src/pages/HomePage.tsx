@@ -4,6 +4,7 @@ import { Header } from "@/components/layout/Header"
 import { Footer } from "@/components/layout/Footer"
 import { usePriceFormatter } from "@/lib/currency"
 import { Hero } from "@/components/sections/Hero"
+import { BrandMarquee } from "@/components/sections/BrandMarquee"
 import { EditorialGrid } from "@/components/sections/EditorialGrid"
 import { Button } from "@/components/ui/Button"
 import { getReviews } from "@/lib/api"
@@ -106,6 +107,8 @@ export default function HomePage() {
         ) : (
           <>
             <Hero reviews={reviews.slice(0, 3)} />
+            
+            <BrandMarquee />
 
             {/* EXPLORE THE FLEET — redesigned */}
             <section className="py-16 md:py-20">
@@ -114,9 +117,8 @@ export default function HomePage() {
                   <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6">
                     <div>
                       <span className="text-[11px] font-mono font-bold text-primary uppercase tracking-[0.3em] block mb-4">Curated Collection</span>
-                      <h2 className="text-5xl md:text-7xl font-archivo font-black uppercase tracking-tighter leading-none">
-                        EXPLORE <br className="hidden md:block" />
-                        <span className="text-primary italic">THE FLEET</span>
+                      <h2 className="text-4xl md:text-5xl font-archivo font-extrabold uppercase tracking-tighter leading-none">
+                        EXPLORE <span className="text-primary tracking-normal">THE FLEET</span>
                       </h2>
                       <p className="text-sm font-mono text-slate-500 mt-4 uppercase tracking-[0.3em] max-w-xl">
                         {reviews.length} vehicles across {uniqueBrands} manufacturers — rigorously tested and reviewed
@@ -217,8 +219,8 @@ export default function HomePage() {
                 <Reveal animation="fade-left">
                   <div className="mb-10 text-center md:text-left">
                     <span className="text-[11px] font-mono font-bold text-primary uppercase tracking-[0.3em] block mb-4">Browse by</span>
-                    <h2 className="text-5xl md:text-7xl font-archivo font-black uppercase tracking-tighter">
-                      Vehicle <span className="text-primary italic">Segment</span>
+                    <h2 className="text-4xl md:text-5xl font-archivo font-extrabold uppercase tracking-tighter">
+                      Vehicle <span className="text-primary tracking-normal">Segment</span>
                     </h2>
                   </div>
                 </Reveal>
@@ -258,8 +260,8 @@ export default function HomePage() {
               <div className="lg:col-span-3">
                 <Reveal animation="fade-right">
                   <span className="text-[10px] font-mono font-bold text-primary uppercase tracking-[0.3em] block mb-4">Newsletter</span>
-                  <h2 className="text-5xl md:text-7xl font-archivo font-black uppercase tracking-tighter leading-none text-white">
-                    Stay in <span className="text-primary italic">the Know</span>
+                  <h2 className="text-4xl md:text-5xl font-archivo font-extrabold uppercase tracking-tighter leading-none text-white">
+                    Stay in <span className="text-primary tracking-normal">the Know</span>
                   </h2>
                   <div className="mt-8 space-y-4">
                     <div className="flex items-start gap-4">

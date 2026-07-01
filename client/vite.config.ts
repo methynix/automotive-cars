@@ -18,16 +18,21 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/carapi/, ''),
       },
       '/api': {
-        target: 'https://car-reviewdb.onrender.com',
+        target: 'https://automotive-cars.onrender.com',
         changeOrigin: true,
+        headers: {
+          Origin: 'https://automotive-cars.onrender.com'
+        }
       },
       '/api-docs': {
-        target: 'https://car-reviewdb.onrender.com',
+        target: 'https://automotive-cars.onrender.com',
         changeOrigin: true,
+        headers: { Origin: 'https://automotive-cars.onrender.com' }
       },
       '/sitemap.xml': {
-        target: 'https://car-reviewdb.onrender.com',
+        target: 'https://automotive-cars.onrender.com',
         changeOrigin: true,
+        headers: { Origin: 'https://automotive-cars.onrender.com' }
       },
     },
   },

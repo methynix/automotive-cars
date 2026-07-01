@@ -11,10 +11,10 @@ export function Hero({ reviews }: HeroProps) {
   const featured = reviews.slice(0, 3)
 
   return (
-    <section className="relative h-[800px] w-full overflow-hidden flex items-end bg-black">
+    <section className="relative h-[800px] w-full overflow-hidden flex items-end bg-gradient-to-b from-slate-900 to-black">
       <video
         className="absolute inset-0 w-full h-full object-cover"
-        src="ad.mp4"
+        src="https://res.cloudinary.com/dwt1u991q/video/upload/v1782556431/ad2_y62xjs.mp4"
         poster={FALLBACK_IMAGE_HERO}
         preload="metadata"
         autoPlay
@@ -25,7 +25,7 @@ export function Hero({ reviews }: HeroProps) {
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
       <div className="relative z-10 w-full px-6 md:px-12 max-w-[1280px] mx-auto pb-16">
         <div className="max-w-2xl mb-10">
-          <h1 className="text-6xl md:text-8xl font-archivo font-extrabold text-white mb-6 leading-[0.9] tracking-tighter uppercase">
+          <h1 className="text-6xl md:text-8xl font-archivo font-extrabold text-white mb-6 leading-[0.9] tracking-normal uppercase">
             FUTURE  <br /> AUTOMOTIVE
           </h1>
           <p className="text-lg md:text-xl text-white/80 max-w-lg mb-8 font-inter">

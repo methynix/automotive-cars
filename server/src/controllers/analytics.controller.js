@@ -3,6 +3,6 @@ import { success } from '../utils/apiResponse.js';
 
 export const AnalyticsController = {
   async overview(req, res, next) {
-    try { return success(res, await AnalyticsService.overview()); } catch (err) { next(err); }
+    try { return success(res, await AnalyticsService.overview(req.query.range)); } catch (err) { next(err); }
   },
 };

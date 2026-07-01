@@ -20,8 +20,8 @@ export const LeadService = {
     ]);
     return { data, total, page, limit };
   },
-  async updateStatus(id, status) {
-    return prisma.lead.update({ where: { id }, data: { status } });
+  async update(id, data) {
+    return prisma.lead.update({ where: { id }, data });
   },
   async remove(id) {
     await prisma.lead.delete({ where: { id } });

@@ -151,8 +151,19 @@ export const useLeads = (filters: Record<string, unknown> = {}) =>
 export const useUpdateLead = () => {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: Lead["status"] }) => api.updateLead(id, status),
+    mutationFn: ({ id, data }: { id: string; data: Partial<Lead> }) => api.updateLead(id, data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "leads"] }),
+  })
+}
+
+export const useSettings = () =>
+  useQuery({ queryKey: ["settings"], queryFn: api.getSettings })
+
+export const useUpdateSettings = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: Record<string, any>) => api.updateSettings(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["settings"] }),
   })
 }
 
@@ -166,5 +177,5 @@ export const useDeleteLead = () => {
 
 /* ───────── Admin: analytics ───────── */
 
-export const useAnalytics = () =>
-  useQuery({ queryKey: ["admin", "analytics"], queryFn: api.getAnalytics })
+export const useAnalytics = (range?: string) =>
+  useQuery({ queryKey: ["admin", "analytics", range], queryFn: () => api.getAnalytics(range) })

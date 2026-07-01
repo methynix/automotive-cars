@@ -1,13 +1,19 @@
-import { useState } from "react"
+import { useState, Fragment, useEffect } from "react"
 import { Navigate } from "react-router-dom"
 import {
-  FiGrid, FiBox, FiUsers, FiTag, FiInbox, FiSettings, FiLogOut,
+  FiGrid, FiBox, FiUsers, FiTag, FiInbox, FiSettings, FiLogOut, FiCopy,
   FiPlus, FiEdit, FiTrash2, FiUploadCloud, FiEye, FiEyeOff, FiX, FiCheck, FiLoader, FiAlertTriangle, FiMessageSquare,
+  FiBold, FiItalic, FiList, FiMenu,
 } from "react-icons/fi"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts"
+import { useEditor, EditorContent } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, rectSortingStrategy } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { useAuth } from "@/lib/auth"
 import { useToast } from "@/lib/toast"
-import { uploadImage } from "@/lib/api"
+import { uploadImage, createComment } from "@/lib/api"
 import {
   useAdminReviews, useCreateReview, useUpdateReview, useDeleteReview, useSetPublish,
   useAdminComments, useModerateComment, useDeleteComment,
@@ -15,9 +21,10 @@ import {
   useUsers, useUpdateUser, useDeleteUser,
   useLeads, useUpdateLead, useDeleteLead,
   useAnalytics,
+  useSettings, useUpdateSettings
 } from "@/hooks/useApi"
 import { BODY_STYLES, CONDITIONS } from "@/lib/constants"
-import type { Review, ReviewInput, ReviewSpec, GalleryImage, Brand } from "@/lib/types"
+import type { Review, ReviewInput, ReviewSpec, GalleryImage, Brand, Lead, Comment as AppComment } from "@/lib/types"
 
 // Module-level so inputs keep focus across re-renders (defining this inside a
 // component would remount every field on each keystroke).
@@ -106,7 +113,7 @@ export default function AdminPage() {
       </aside>
 
       <main className="flex-1 p-8 overflow-x-hidden">
-        {tab === "dashboard" && <DashboardTab />}
+        {tab === "dashboard" && <DashboardTab setTab={setTab} />}
         {tab === "vehicles" && <VehiclesTab />}
         {tab === "brands" && isAdmin && <BrandsTab />}
         {tab === "comments" && <CommentsTab />}
@@ -119,43 +126,79 @@ export default function AdminPage() {
 }
 
 /* ─────────────── Dashboard ─────────────── */
-function Stat({ label, value }: { label: string; value: string | number }) {
+function Stat({ label, value, onClick }: { label: string; value: string | number; onClick?: () => void }) {
   return (
-    <div className="border border-border p-5">
-      <div className="text-3xl font-archivo font-extrabold">{value}</div>
+    <div onClick={onClick} className={`border border-border p-5 ${onClick ? 'cursor-pointer hover:border-primary transition-colors group' : ''}`}>
+      <div className={`text-3xl font-archivo font-extrabold ${onClick ? 'group-hover:text-primary' : ''}`}>{value}</div>
       <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground mt-1">{label}</div>
     </div>
   )
 }
 
-function DashboardTab() {
-  const { data, isLoading } = useAnalytics()
+function DashboardTab({ setTab }: { setTab: (tab: Tab) => void }) {
+  const [range, setRange] = useState("all")
+  const { data, isLoading } = useAnalytics(range)
+
   if (isLoading || !data) return <p className="font-mono text-sm">Loading analytics…</p>
   const t = data.totals
+
   return (
     <div>
-      <h2 className="text-3xl font-archivo font-extrabold uppercase tracking-tight mb-8">Dashboard</h2>
+      <div className="flex items-center justify-between mb-8">
+        <h2 className="text-3xl font-archivo font-extrabold uppercase tracking-tight">Dashboard</h2>
+        <select
+          value={range}
+          onChange={(e) => setRange(e.target.value)}
+          className="bg-background border border-border px-3 py-2 text-xs font-mono uppercase tracking-widest outline-none focus:border-primary"
+        >
+          <option value="all">All Time</option>
+          <option value="30d">Last 30 Days</option>
+          <option value="7d">Last 7 Days</option>
+        </select>
+      </div>
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-        <Stat label="Published" value={t.published} />
-        <Stat label="Drafts" value={t.drafts} />
+        <Stat label="Published" value={t.published} onClick={() => setTab("vehicles")} />
+        <Stat label="Drafts" value={t.drafts} onClick={() => setTab("vehicles")} />
         <Stat label="Total Views" value={t.views.toLocaleString()} />
         <Stat label="Avg Rating" value={`${t.avgRating}/10`} />
-        <Stat label="New Leads" value={t.newLeads} />
-        <Stat label="Pending Comments" value={t.pendingComments} />
-        <Stat label="Brands" value={t.brands} />
-        <Stat label="Users" value={t.users} />
+        <Stat label="New Leads" value={t.newLeads} onClick={() => setTab("leads")} />
+        <Stat label="Pending Comments" value={t.pendingComments} onClick={() => setTab("comments")} />
+        <Stat label="Brands" value={t.brands} onClick={() => setTab("brands")} />
+        <Stat label="Users" value={t.users} onClick={() => setTab("users")} />
       </div>
-      <div className="border border-border p-6">
-        <h3 className="text-xs font-mono uppercase tracking-[0.3em] text-muted-foreground mb-6">Most-viewed vehicles (real data)</h3>
-        <ResponsiveContainer width="100%" height={280}>
-          <BarChart data={data.topReviews}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-            <YAxis tick={{ fontSize: 11 }} />
-            <Tooltip />
-            <Bar dataKey="views" fill="#E31837" />
-          </BarChart>
-        </ResponsiveContainer>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="border border-border p-6 lg:col-span-2">
+          <h3 className="text-xs font-mono uppercase tracking-[0.3em] text-muted-foreground mb-6">Most-viewed vehicles</h3>
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={data.topReviews}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} />
+              <Tooltip />
+              <Bar dataKey="views" fill="#E31837" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="border border-border p-6 overflow-hidden flex flex-col h-[380px]">
+          <h3 className="text-xs font-mono uppercase tracking-[0.3em] text-muted-foreground mb-6 shrink-0">Recent Activity</h3>
+          <div className="overflow-y-auto pr-2 space-y-4 flex-grow">
+            {(data.recentActivity || []).length === 0 ? (
+              <p className="text-[11px] font-mono text-muted-foreground italic">No recent activity.</p>
+            ) : (
+              (data.recentActivity || []).map((act: any) => (
+                <div key={act.id} className="text-sm border-l-2 border-primary/30 pl-3 py-1">
+                  <span className="text-[9px] font-mono text-muted-foreground uppercase tracking-widest block mb-1">
+                    {new Date(act.date).toLocaleString()}
+                  </span>
+                  <span className="leading-snug">{act.msg}</span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -163,22 +206,51 @@ function DashboardTab() {
 
 /* ─────────────── Vehicles ─────────────── */
 function VehiclesTab() {
-  const { data, isLoading } = useAdminReviews({ limit: 100 })
+  const [page, setPage] = useState(1)
+  const [search, setSearch] = useState("")
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+
+  // Simple debounce for search
+  useEffect(() => {
+    const t = setTimeout(() => { setDebouncedSearch(search); setPage(1) }, 500)
+    return () => clearTimeout(t)
+  }, [search])
+
+  const { data, isLoading } = useAdminReviews({ page, limit: 10, search: debouncedSearch })
   const createReview = useCreateReview()
   const updateReview = useUpdateReview()
   const deleteReview = useDeleteReview()
   const setPublish = useSetPublish()
 
   const [editing, setEditing] = useState<Review | null>(null)
+  const [isClone, setIsClone] = useState(false)
   const [open, setOpen] = useState(false)
   const { confirm, dialog } = useConfirm()
   const toast = useToast()
   const { isAdmin } = useAuth()
 
   const rows = data?.data ?? []
+  const totalPages = data ? Math.max(1, Math.ceil(data.total / data.limit)) : 1
 
-  const openNew = () => { setEditing(null); setOpen(true) }
-  const openEdit = (r: Review) => { setEditing(r); setOpen(true) }
+  const [selected, setSelected] = useState<string[]>([])
+  const toggleAll = (e: any) => setSelected(e.target.checked ? rows.map((r: any) => r.id) : [])
+  const toggleOne = (id: string) => setSelected(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id])
+
+  const bulkDelete = async () => {
+    if (await confirm(`Delete ${selected.length} vehicles?`)) {
+      try { await Promise.all(selected.map(id => deleteReview.mutateAsync(id))); toast.success("Vehicles deleted."); setSelected([]) }
+      catch (e: any) { toast.error("Failed to delete some vehicles.") }
+    }
+  }
+
+  const bulkStatus = async (status: 'published' | 'draft') => {
+    try { await Promise.all(selected.map(id => setPublish.mutateAsync({ id, status }))); toast.success(`Vehicles marked as ${status}.`); setSelected([]) }
+    catch (e: any) { toast.error("Failed to update status.") }
+  }
+
+  const openNew = () => { setEditing(null); setIsClone(false); setOpen(true) }
+  const openEdit = (r: Review) => { setEditing(r); setIsClone(false); setOpen(true) }
+  const openClone = (r: Review) => { setEditing(r); setIsClone(true); setOpen(true) }
 
   const onDelete = async (r: Review) => {
     if (await confirm(`Delete "${r.title}"? It will be hidden from the site but can be restored from the database.`)) {
@@ -191,16 +263,38 @@ function VehiclesTab() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <h2 className="text-3xl font-archivo font-extrabold uppercase tracking-tight">Vehicles</h2>
-        <button onClick={openNew} className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 text-xs font-mono font-bold uppercase tracking-widest hover:bg-foreground transition-colors">
-          <FiPlus size={14} /> Add Vehicle
-        </button>
+        <div className="flex items-center gap-4">
+          <input
+            className="border border-border bg-background px-3 py-2 text-sm focus:border-primary outline-none min-w-[240px]"
+            placeholder="Search make, model..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <button onClick={openNew} className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 text-xs font-mono font-bold uppercase tracking-widest hover:bg-foreground transition-colors">
+            <FiPlus size={14} /> Add Vehicle
+          </button>
+        </div>
       </div>
 
+      {selected.length > 0 && (
+        <div className="mb-4 flex items-center gap-3 p-3 border border-primary/20 bg-primary/5">
+          <span className="text-xs font-mono uppercase text-primary font-bold">{selected.length} selected</span>
+          {isAdmin && (
+            <>
+              <button onClick={() => bulkStatus("published")} className="text-xs font-mono uppercase tracking-widest px-3 py-1.5 border border-border bg-background hover:border-primary transition-colors">Publish</button>
+              <button onClick={() => bulkStatus("draft")} className="text-xs font-mono uppercase tracking-widest px-3 py-1.5 border border-border bg-background hover:border-primary transition-colors">Draft</button>
+              <button onClick={bulkDelete} className="text-xs font-mono uppercase tracking-widest px-3 py-1.5 border border-red-500/30 text-red-600 bg-red-500/10 hover:bg-red-500 hover:text-white transition-colors">Delete</button>
+            </>
+          )}
+        </div>
+      )}
+
       {isLoading ? <p className="font-mono text-sm">Loading…</p> : (
-        <div className="border border-border overflow-x-auto">
+        <div className="border border-border overflow-x-auto mb-6">
           <table className="w-full min-w-[720px] text-sm">
             <thead className="bg-muted/30 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
               <tr>
+                <th className="p-3 w-10 text-center"><input type="checkbox" checked={selected.length === rows.length && rows.length > 0} onChange={toggleAll} /></th>
                 <th className="text-left p-3">Vehicle</th>
                 <th className="text-left p-3">Price</th>
                 <th className="text-left p-3">Status</th>
@@ -211,6 +305,7 @@ function VehiclesTab() {
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id} className="border-t border-border">
+                  <td className="p-3 text-center"><input type="checkbox" checked={selected.includes(r.id)} onChange={() => toggleOne(r.id)} /></td>
                   <td className="p-3">
                     <div className="font-archivo font-bold">{r.manufacturer} {r.model}</div>
                     <div className="text-[10px] font-mono text-muted-foreground">{r.year}{r.body_style ? ` · ${r.body_style}` : ""}</div>
@@ -248,6 +343,7 @@ function VehiclesTab() {
                   <td className="p-3 font-mono">{r.views}</td>
                   <td className="p-3">
                     <div className="flex items-center justify-end gap-2">
+                      <button title="Clone" onClick={() => openClone(r)} className="p-2 border border-border hover:border-primary text-muted-foreground hover:text-foreground"><FiCopy size={14} /></button>
                       <button title="Edit" onClick={() => openEdit(r)} className="p-2 border border-border hover:border-primary"><FiEdit size={14} /></button>
                       {isAdmin && (
                         <button title="Delete" onClick={() => onDelete(r)} className="p-2 border border-border hover:border-primary text-primary"><FiTrash2 size={14} /></button>
@@ -256,21 +352,33 @@ function VehiclesTab() {
                   </td>
                 </tr>
               ))}
-              {rows.length === 0 && <tr><td colSpan={5} className="p-8 text-center text-muted-foreground font-mono text-xs">No vehicles yet.</td></tr>}
+              {rows.length === 0 && <tr><td colSpan={6} className="p-8 text-center text-muted-foreground font-mono text-xs">No vehicles found.</td></tr>}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {!isLoading && totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mb-8">
+          <button disabled={page <= 1} onClick={() => setPage(page - 1)} className="px-4 py-2 text-xs font-mono uppercase border border-border disabled:opacity-40 hover:border-primary">Prev</button>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+            <button key={p} onClick={() => setPage(p)} className={`w-10 h-10 text-xs font-mono border ${p === page ? "border-primary bg-primary text-white" : "border-border hover:border-primary"}`}>{p}</button>
+          ))}
+          <button disabled={page >= totalPages} onClick={() => setPage(page + 1)} className="px-4 py-2 text-xs font-mono uppercase border border-border disabled:opacity-40 hover:border-primary">Next</button>
         </div>
       )}
 
       {open && (
         <VehicleForm
           initial={editing}
+          isClone={isClone}
           isAdmin={isAdmin}
           saving={createReview.isPending || updateReview.isPending}
           onClose={() => setOpen(false)}
           onSave={async (payload) => {
             try {
-              if (editing) { await updateReview.mutateAsync({ id: editing.id, data: payload }); toast.success("Vehicle updated.") }
+              if (editing && !isClone) { await updateReview.mutateAsync({ id: editing.id, data: payload }); toast.success("Vehicle updated.") }
               else { await createReview.mutateAsync(payload); toast.success("Vehicle created.") }
               setOpen(false)
             } catch (e: any) { toast.error(e?.message || "Save failed.") }
@@ -282,19 +390,35 @@ function VehiclesTab() {
   )
 }
 
-function VehicleForm({ initial, onClose, onSave, saving, isAdmin }: {
+function SortableGalleryItem({ id, g, onRemove }: { id: string, g: GalleryImage, onRemove: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id })
+  const style = { transform: CSS.Transform.toString(transform), transition }
+
+  return (
+    <div ref={setNodeRef} style={style} className="relative aspect-video border border-border overflow-hidden bg-muted group">
+      <img src={g.image_url} alt={g.alt_text || ""} className="w-full h-full object-cover" />
+      <div {...attributes} {...listeners} className="absolute top-1 left-1 w-6 h-6 bg-black/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing hover:bg-primary"><FiMenu size={12} /></div>
+      <button type="button" onClick={onRemove}
+        className="absolute top-1 right-1 w-6 h-6 bg-black/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary z-10"
+        title="Remove"><FiX size={12} /></button>
+    </div>
+  )
+}
+
+function VehicleForm({ initial, isClone, onClose, onSave, saving, isAdmin }: {
   initial: Review | null
+  isClone?: boolean
   onClose: () => void
   onSave: (data: ReviewInput) => Promise<void>
   saving: boolean
   isAdmin: boolean
 }) {
   const [form, setForm] = useState<ReviewInput>(() => initial ? {
-    title: initial.title, excerpt: initial.excerpt || "", featured_image: initial.featured_image || "",
+    title: initial.title + (isClone ? " (Copy)" : ""), excerpt: initial.excerpt || "", featured_image: initial.featured_image || "",
     manufacturer: initial.manufacturer, model: initial.model, year: initial.year,
     body_style: initial.body_style || "Sedan", condition: initial.condition || "new",
     content: { body: (initial.content?.body as string) || "", pros: initial.content?.pros || [], cons: initial.content?.cons || [] },
-    rating: initial.rating ?? 8, status: initial.status, featured: initial.featured,
+    rating: initial.rating ?? 8, status: isClone ? "draft" : initial.status, featured: isClone ? false : initial.featured,
     specs: { ...initial.specs },
   } : { ...emptyForm })
 
@@ -304,6 +428,25 @@ function VehicleForm({ initial, onClose, onSave, saving, isAdmin }: {
   const [gallery, setGallery] = useState<GalleryImage[]>(initial?.gallery ?? [])
   const [prosText, setProsText] = useState((initial?.content?.pros || []).join("\n"))
   const [consText, setConsText] = useState((initial?.content?.cons || []).join("\n"))
+
+  const editor = useEditor({
+    extensions: [StarterKit],
+    content: form.content.body as string,
+    editorProps: { attributes: { class: 'prose prose-sm max-w-none focus:outline-none min-h-[100px] p-3 font-serif' } },
+    onUpdate: ({ editor }) => set({ content: { ...form.content, body: editor.getHTML() } }),
+  })
+
+  const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }))
+  const handleDragEnd = (e: any) => {
+    const { active, over } = e
+    if (active.id !== over?.id) {
+      setGallery((items) => {
+        const oldIndex = items.findIndex(i => i.image_url === active.id)
+        const newIndex = items.findIndex(i => i.image_url === over.id)
+        return arrayMove(items, oldIndex, newIndex)
+      })
+    }
+  }
 
   const set = (patch: Partial<ReviewInput>) => setForm((f) => ({ ...f, ...patch }))
   const setSpec = (patch: Partial<ReviewSpec>) => setForm((f) => ({ ...f, specs: { ...f.specs, ...patch } }))
@@ -424,7 +567,16 @@ function VehicleForm({ initial, onClose, onSave, saving, isAdmin }: {
 
         <div className="mt-4 space-y-4">
           <Field label="Excerpt"><input className={inputCls} value={form.excerpt} onChange={(e) => set({ excerpt: e.target.value })} /></Field>
-          <Field label="Review body"><textarea className={`${inputCls} min-h-[100px]`} value={form.content.body as string} onChange={(e) => set({ content: { ...form.content, body: e.target.value } })} /></Field>
+          <Field label="Review body">
+            <div className="border border-border">
+              <div className="flex items-center gap-1 p-1 border-b border-border bg-muted/30">
+                <button type="button" onClick={() => editor?.chain().focus().toggleBold().run()} className={`p-2 hover:bg-muted ${editor?.isActive('bold') ? 'bg-muted text-primary' : ''}`}><FiBold size={14}/></button>
+                <button type="button" onClick={() => editor?.chain().focus().toggleItalic().run()} className={`p-2 hover:bg-muted ${editor?.isActive('italic') ? 'bg-muted text-primary' : ''}`}><FiItalic size={14}/></button>
+                <button type="button" onClick={() => editor?.chain().focus().toggleBulletList().run()} className={`p-2 hover:bg-muted ${editor?.isActive('bulletList') ? 'bg-muted text-primary' : ''}`}><FiList size={14}/></button>
+              </div>
+              <EditorContent editor={editor} />
+            </div>
+          </Field>
           <div className="grid md:grid-cols-2 gap-4">
             <Field label="Pros (one per line)"><textarea className={`${inputCls} min-h-[80px]`} value={prosText} onChange={(e) => setProsText(e.target.value)} /></Field>
             <Field label="Cons (one per line)"><textarea className={`${inputCls} min-h-[80px]`} value={consText} onChange={(e) => setConsText(e.target.value)} /></Field>
@@ -442,16 +594,15 @@ function VehicleForm({ initial, onClose, onSave, saving, isAdmin }: {
             {gallery.length === 0 ? (
               <p className="text-[11px] font-mono text-muted-foreground border border-dashed border-border p-4 text-center">No gallery images yet. Add interior, exterior and detail shots.</p>
             ) : (
-              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                {gallery.map((g, i) => (
-                  <div key={`${g.image_url}-${i}`} className="relative aspect-video border border-border overflow-hidden bg-muted group">
-                    <img src={g.image_url} alt={g.alt_text || ""} className="w-full h-full object-cover" />
-                    <button type="button" onClick={() => removeGalleryImage(i)}
-                      className="absolute top-1 right-1 w-6 h-6 bg-black/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary"
-                      title="Remove"><FiX size={12} /></button>
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={gallery.map(g => g.image_url)} strategy={rectSortingStrategy}>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                    {gallery.map((g, i) => (
+                      <SortableGalleryItem key={g.image_url} id={g.image_url} g={g} onRemove={() => removeGalleryImage(i)} />
+                    ))}
                   </div>
-                ))}
-              </div>
+                </SortableContext>
+              </DndContext>
             )}
           </div>
 
@@ -493,40 +644,119 @@ function BrandsTab() {
   const deleteBrand = useDeleteBrand()
   const { confirm, dialog } = useConfirm()
   const toast = useToast()
-  const [form, setForm] = useState<{ id?: string; name: string; country: string; founded_year: string }>({ name: "", country: "", founded_year: "" })
+  
+  const [form, setForm] = useState<{ id?: string; name: string; country: string; founded_year: string; logo_url: string }>({ name: "", country: "", founded_year: "", logo_url: "" })
+  const [uploading, setUploading] = useState(false)
+  const [sortConfig, setSortConfig] = useState<{ key: keyof Brand, direction: 'asc' | 'desc' } | null>(null)
+
+  const handleSort = (key: keyof Brand) => {
+    let direction: 'asc' | 'desc' = 'asc'
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc'
+    setSortConfig({ key, direction })
+  }
+
+  const sortedBrands = [...(brands ?? [])].sort((a, b) => {
+    if (!sortConfig) return 0;
+    const { key, direction } = sortConfig;
+    let valA = a[key] ?? "";
+    let valB = b[key] ?? "";
+    if (typeof valA === 'string') valA = valA.toLowerCase();
+    if (typeof valB === 'string') valB = valB.toLowerCase();
+    if (valA < valB) return direction === 'asc' ? -1 : 1;
+    if (valA > valB) return direction === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const handleUpload = async (file?: File) => {
+    if (!file) return
+    setUploading(true)
+    try {
+      const { url } = await uploadImage(file, "brand", form.name || "logo")
+      setForm(f => ({ ...f, logo_url: url }))
+    } catch (err: any) { toast.error(err?.message || "Upload failed.") }
+    finally { setUploading(false) }
+  }
 
   const save = async () => {
     if (form.name.trim().length < 1) return
-    const payload = { name: form.name.trim(), country: form.country || null, founded_year: form.founded_year ? parseInt(form.founded_year) : null }
+    const payload = { name: form.name.trim(), country: form.country || null, founded_year: form.founded_year ? parseInt(form.founded_year) : null, logo_url: form.logo_url || null }
     try {
       if (form.id) { await updateBrand.mutateAsync({ id: form.id, data: payload }); toast.success("Brand updated.") }
       else { await createBrand.mutateAsync(payload); toast.success("Brand added.") }
-      setForm({ name: "", country: "", founded_year: "" })
+      setForm({ name: "", country: "", founded_year: "", logo_url: "" })
     } catch (e: any) { toast.error(e?.message || "Could not save brand.") }
   }
-  const edit = (b: Brand) => setForm({ id: b.id, name: b.name, country: b.country || "", founded_year: b.founded_year?.toString() || "" })
+  const edit = (b: Brand) => setForm({ id: b.id, name: b.name, country: b.country || "", founded_year: b.founded_year?.toString() || "", logo_url: b.logo_url || "" })
 
   return (
     <div>
       <h2 className="text-3xl font-archivo font-extrabold uppercase tracking-tight mb-8">Brands</h2>
-      <div className="flex flex-wrap items-end gap-3 mb-8 border border-border p-4">
-        <input className="border border-border bg-background px-3 py-2 text-sm" placeholder="Brand name *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-        <input className="border border-border bg-background px-3 py-2 text-sm" placeholder="Country" value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} />
-        <input className="border border-border bg-background px-3 py-2 text-sm w-28" placeholder="Founded" value={form.founded_year} onChange={(e) => setForm({ ...form, founded_year: e.target.value })} />
-        <button onClick={save} className="bg-primary text-white px-4 py-2 text-xs font-mono font-bold uppercase">{form.id ? "Update" : "Add"}</button>
-        {form.id && <button onClick={() => setForm({ name: "", country: "", founded_year: "" })} className="px-3 py-2 text-xs font-mono uppercase border border-border">Cancel</button>}
+      <div className="flex flex-wrap items-end gap-3 mb-8 border border-border p-4 bg-muted/10">
+        <div>
+          <label className="block text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1">Brand Name *</label>
+          <input className="border border-border bg-background px-3 py-2 text-sm w-48 focus:border-primary outline-none" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+        </div>
+        <div>
+          <label className="block text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1">Country</label>
+          <input className="border border-border bg-background px-3 py-2 text-sm w-32 focus:border-primary outline-none" value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} />
+        </div>
+        <div>
+          <label className="block text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1">Founded</label>
+          <input className="border border-border bg-background px-3 py-2 text-sm w-24 focus:border-primary outline-none" value={form.founded_year} onChange={(e) => setForm({ ...form, founded_year: e.target.value })} />
+        </div>
+        <div>
+          <label className="block text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1">Logo</label>
+          <div className="flex items-center gap-2">
+            <input className="border border-border bg-background px-3 py-2 text-sm w-40 focus:border-primary outline-none" placeholder="URL" value={form.logo_url} onChange={(e) => setForm({ ...form, logo_url: e.target.value })} />
+            <label className={`inline-flex items-center justify-center border px-3 py-2 text-xs font-mono transition-colors ${uploading ? "border-primary text-primary cursor-wait" : "border-border hover:border-primary cursor-pointer bg-background"}`}>
+              {uploading ? <FiLoader size={14} className="animate-spin" /> : <FiUploadCloud size={14} />}
+              <input type="file" accept="image/*" className="hidden" disabled={uploading} onChange={(e) => handleUpload(e.target.files?.[0])} />
+            </label>
+          </div>
+        </div>
+        
+        <button onClick={save} className="bg-primary text-white px-5 py-2 text-xs font-mono font-bold uppercase tracking-widest hover:bg-foreground transition-colors ml-auto">{form.id ? "Update" : "Add"}</button>
+        {form.id && <button onClick={() => setForm({ name: "", country: "", founded_year: "", logo_url: "" })} className="px-5 py-2 text-xs font-mono uppercase border border-border bg-background hover:bg-muted transition-colors">Cancel</button>}
       </div>
+
       {isLoading ? <p className="font-mono text-sm">Loading…</p> : (
-        <div className="border border-border divide-y divide-border">
-          {(brands ?? []).map((b) => (
-            <div key={b.id} className="flex items-center justify-between p-3">
-              <div><span className="font-archivo font-bold">{b.name}</span> <span className="text-xs font-mono text-muted-foreground">{b.country}{b.founded_year ? ` · ${b.founded_year}` : ""}</span></div>
-              <div className="flex gap-2">
-                <button onClick={() => edit(b)} className="p-2 border border-border hover:border-primary"><FiEdit size={14} /></button>
-                <button onClick={async () => { if (await confirm(`Delete brand "${b.name}"? Vehicles keep their manufacturer text.`)) deleteBrand.mutate(b.id, { onSuccess: () => toast.success("Brand deleted."), onError: (e: any) => toast.error(e?.message || "Delete failed.") }) }} className="p-2 border border-border hover:border-primary text-primary"><FiTrash2 size={14} /></button>
-              </div>
-            </div>
-          ))}
+        <div className="border border-border overflow-x-auto">
+          <table className="w-full min-w-[600px] text-sm">
+            <thead className="bg-muted/30 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+              <tr>
+                <th className="p-3 w-16 text-center">Logo</th>
+                <th className="text-left p-3 cursor-pointer hover:text-primary transition-colors select-none" onClick={() => handleSort('name')}>
+                  Brand Name {sortConfig?.key === 'name' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
+                </th>
+                <th className="text-left p-3 cursor-pointer hover:text-primary transition-colors select-none" onClick={() => handleSort('country')}>
+                  Country {sortConfig?.key === 'country' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
+                </th>
+                <th className="text-left p-3 cursor-pointer hover:text-primary transition-colors select-none" onClick={() => handleSort('founded_year')}>
+                  Founded {sortConfig?.key === 'founded_year' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}
+                </th>
+                <th className="text-right p-3">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedBrands.map((b) => (
+                <tr key={b.id} className="border-t border-border">
+                  <td className="p-3 text-center">
+                    {b.logo_url ? <img src={b.logo_url} alt={b.name} className="w-8 h-8 object-contain mx-auto" /> : <span className="text-muted-foreground">—</span>}
+                  </td>
+                  <td className="p-3 font-archivo font-bold">{b.name}</td>
+                  <td className="p-3 text-muted-foreground">{b.country || "—"}</td>
+                  <td className="p-3 font-mono text-xs">{b.founded_year || "—"}</td>
+                  <td className="p-3">
+                    <div className="flex items-center justify-end gap-2">
+                      <button onClick={() => edit(b)} className="p-2 border border-border hover:border-primary"><FiEdit size={14} /></button>
+                      <button onClick={async () => { if (await confirm(`Delete brand "${b.name}"? Vehicles keep their manufacturer text.`)) deleteBrand.mutate(b.id, { onSuccess: () => toast.success("Brand deleted."), onError: (e: any) => toast.error(e?.message || "Delete failed.") }) }} className="p-2 border border-border hover:border-primary text-primary"><FiTrash2 size={14} /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {sortedBrands.length === 0 && <tr><td colSpan={5} className="p-8 text-center text-muted-foreground font-mono text-xs">No brands found.</td></tr>}
+            </tbody>
+          </table>
         </div>
       )}
       {dialog}
@@ -545,9 +775,55 @@ function LeadsTab() {
   const rows = data?.data ?? []
   const statuses = ["new", "contacted", "qualified", "closed"] as const
 
+  const [expanded, setExpanded] = useState<string | null>(null)
+  const [noteDraft, setNoteDraft] = useState("")
+
+  const exportCsv = () => {
+    if (rows.length === 0) return toast.error("No leads to export.");
+    const headers = ["Name", "Email", "Phone", "Location", "Vehicle", "Status", "Date", "Internal Notes"];
+    const csvRows = [headers.map(h => `"${h}"`).join(",")];
+    for (const l of rows) {
+      const vehicle = l.review ? `${l.review.manufacturer} ${l.review.model}` : "General Inquiry";
+      const notes = l.internal_notes ? l.internal_notes.replace(/"/g, '""') : "";
+      const row = [
+        `"${l.full_name}"`, `"${l.email}"`, `"${l.phone}"`, `"${l.preferred_location || ''}"`,
+        `"${vehicle}"`, `"${l.status}"`, `"${new Date(l.created_at).toLocaleString()}"`, `"${notes}"`
+      ];
+      csvRows.push(row.join(","));
+    }
+    const blob = new Blob([csvRows.join("\n")], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `leads-export-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("CSV exported successfully.");
+  }
+
+  const toggleExpand = (l: Lead) => {
+    if (expanded === l.id) {
+      setExpanded(null)
+    } else {
+      setExpanded(l.id)
+      setNoteDraft(l.internal_notes || "")
+    }
+  }
+
+  const saveNotes = (id: string) => {
+    updateLead.mutate({ id, data: { internal_notes: noteDraft } }, {
+      onSuccess: () => toast.success("Notes saved.")
+    })
+  }
+
   return (
     <div>
-      <h2 className="text-3xl font-archivo font-extrabold uppercase tracking-tight mb-8">Leads</h2>
+      <div className="flex items-center justify-between mb-8">
+        <h2 className="text-3xl font-archivo font-extrabold uppercase tracking-tight">Leads</h2>
+        <button onClick={exportCsv} className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 text-xs font-mono font-bold uppercase tracking-widest hover:bg-foreground transition-colors">
+          Export CSV
+        </button>
+      </div>
       {isLoading ? <p className="font-mono text-sm">Loading…</p> : (
         <div className="border border-border overflow-x-auto">
           <table className="w-full min-w-[760px] text-sm">
@@ -556,18 +832,45 @@ function LeadsTab() {
             </thead>
             <tbody>
               {rows.map((l) => (
-                <tr key={l.id} className="border-t border-border">
-                  <td className="p-3"><div className="font-archivo font-bold">{l.full_name}</div><div className="text-[10px] font-mono text-muted-foreground">{l.email} · {l.phone}</div></td>
-                  <td className="p-3 text-xs font-mono">{l.review ? `${l.review.manufacturer} ${l.review.model}` : "—"}</td>
-                  <td className="p-3 text-xs">{l.preferred_location || "—"}</td>
-                  <td className="p-3">
-                    <select value={l.status} onChange={(e) => updateLead.mutate({ id: l.id, status: e.target.value as any }, { onSuccess: () => toast.success("Lead status updated.") })}
-                      className="border border-border bg-background px-2 py-1 text-xs font-mono uppercase">
-                      {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                  </td>
-                  <td className="p-3 text-right">{isAdmin && (<button onClick={async () => { if (await confirm(`Delete the lead from ${l.full_name}?`)) deleteLead.mutate(l.id, { onSuccess: () => toast.success("Lead deleted.") }) }} className="p-2 border border-border hover:border-primary text-primary"><FiTrash2 size={14} /></button>)}</td>
-                </tr>
+                <Fragment key={l.id}>
+                  <tr className={`border-t border-border ${expanded === l.id ? "bg-muted/10" : ""}`}>
+                    <td className="p-3"><div className="font-archivo font-bold">{l.full_name}</div><div className="text-[10px] font-mono text-muted-foreground">{l.email} · {l.phone}</div></td>
+                    <td className="p-3 text-xs font-mono">{l.review ? `${l.review.manufacturer} ${l.review.model}` : "—"}</td>
+                    <td className="p-3 text-xs">{l.preferred_location || "—"}</td>
+                    <td className="p-3">
+                      <select value={l.status} onChange={(e) => updateLead.mutate({ id: l.id, data: { status: e.target.value as any } }, { onSuccess: () => toast.success("Lead status updated.") })}
+                        className="border border-border bg-background px-2 py-1 text-xs font-mono uppercase">
+                        {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </td>
+                    <td className="p-3 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button onClick={() => toggleExpand(l)} className={`p-2 border hover:border-primary text-muted-foreground hover:text-foreground transition-colors ${expanded === l.id ? 'border-primary text-primary' : 'border-border'}`} title="Notes"><FiEdit size={14} /></button>
+                        {isAdmin && (<button onClick={async () => { if (await confirm(`Delete the lead from ${l.full_name}?`)) deleteLead.mutate(l.id, { onSuccess: () => toast.success("Lead deleted.") }) }} className="p-2 border border-border hover:border-primary text-primary"><FiTrash2 size={14} /></button>)}
+                      </div>
+                    </td>
+                  </tr>
+                  {expanded === l.id && (
+                    <tr className="border-t border-border bg-muted/5">
+                      <td colSpan={5} className="p-4">
+                        <div className="flex flex-col gap-2">
+                          <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Internal Notes (Visible only to admins)</label>
+                          <textarea 
+                            className="border border-border bg-background p-3 text-sm focus:border-primary outline-none min-h-[80px]" 
+                            placeholder="Add notes about this lead... (e.g., Called on Tuesday, left voicemail)"
+                            value={noteDraft}
+                            onChange={(e) => setNoteDraft(e.target.value)}
+                          />
+                          <div className="flex justify-end">
+                            <button onClick={() => saveNotes(l.id)} className="bg-primary text-white px-4 py-2 text-xs font-mono font-bold uppercase tracking-widest hover:bg-foreground transition-colors">
+                              Save Notes
+                            </button>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               ))}
               {rows.length === 0 && <tr><td colSpan={5} className="p-8 text-center text-muted-foreground font-mono text-xs">No leads yet.</td></tr>}
             </tbody>
@@ -586,12 +889,43 @@ function UsersTab({ currentUserId }: { currentUserId: string }) {
   const deleteUser = useDeleteUser()
   const { confirm, dialog } = useConfirm()
   const toast = useToast()
-  const rows = data?.data ?? []
+  
+  const [search, setSearch] = useState("")
+  const [roleFilter, setRoleFilter] = useState("all")
+  
+  const allRows = data?.data ?? []
+  const rows = allRows.filter((u) => {
+    if (roleFilter !== "all" && u.role !== roleFilter) return false
+    if (search) {
+      const q = search.toLowerCase()
+      if (!u.full_name?.toLowerCase().includes(q) && !u.email.toLowerCase().includes(q)) return false
+    }
+    return true
+  })
   const roles: [string, string][] = [["user", "Customer"], ["operator", "Operator"], ["admin", "Admin"]]
 
   return (
     <div>
-      <h2 className="text-3xl font-archivo font-extrabold uppercase tracking-tight mb-8">Users</h2>
+      <div className="flex items-center justify-between mb-8">
+        <h2 className="text-3xl font-archivo font-extrabold uppercase tracking-tight">Users</h2>
+        <div className="flex items-center gap-3">
+          <input 
+            type="text" 
+            placeholder="Search email or name..." 
+            className="border border-border bg-background px-3 py-2 text-sm focus:border-primary outline-none w-64"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <select 
+            className="border border-border bg-background px-3 py-2 text-sm focus:border-primary outline-none"
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+          >
+            <option value="all">All Roles</option>
+            {roles.map(([val, label]) => <option key={val} value={val}>{label}</option>)}
+          </select>
+        </div>
+      </div>
       {isLoading ? <p className="font-mono text-sm">Loading…</p> : (
         <div className="border border-border overflow-x-auto">
           <table className="w-full min-w-[680px] text-sm">
@@ -635,11 +969,15 @@ function UsersTab({ currentUserId }: { currentUserId: string }) {
 /* ─────────────── Comments (moderation) ─────────────── */
 function CommentsTab() {
   const [status, setStatus] = useState<"pending" | "approved" | "spam" | "all">("pending")
-  const { data, isLoading } = useAdminComments({ limit: 200 })
+  const { data, isLoading, refetch } = useAdminComments({ limit: 200 })
   const moderate = useModerateComment()
   const del = useDeleteComment()
   const { confirm, dialog } = useConfirm()
   const toast = useToast()
+  
+  const [replyTo, setReplyTo] = useState<string | null>(null)
+  const [replyBody, setReplyBody] = useState("")
+  const [replying, setReplying] = useState(false)
 
   const all = data?.data ?? []
   const counts = {
@@ -655,6 +993,27 @@ function CommentsTab() {
       onSuccess: () => toast.success(s === "approved" ? "Comment approved." : s === "spam" ? "Marked as spam." : "Moved to pending."),
       onError: (e: any) => toast.error(e?.message || "Could not update comment."),
     })
+
+  const handleReply = async (c: AppComment) => {
+    if (!replyBody.trim()) return;
+    setReplying(true);
+    try {
+      await createComment(c.review_id, {
+        author_name: "Admin",
+        body: replyBody.trim(),
+        parent_id: c.id,
+        status: "approved"
+      } as any);
+      toast.success("Reply posted.");
+      setReplyTo(null);
+      setReplyBody("");
+      refetch();
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to post reply.");
+    } finally {
+      setReplying(false);
+    }
+  }
 
   const filters: { key: typeof status; label: string }[] = [
     { key: "pending", label: `Pending (${counts.pending})` },
@@ -698,6 +1057,7 @@ function CommentsTab() {
                   <p className="text-sm text-muted-foreground leading-relaxed break-words">{c.body}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
+                  <button title="Reply" onClick={() => { setReplyTo(replyTo === c.id ? null : c.id); setReplyBody(""); }} className={`p-2 border transition-colors ${replyTo === c.id ? 'border-primary text-primary' : 'border-border hover:border-primary text-muted-foreground hover:text-foreground'}`}><FiCopy size={14} /></button>
                   {c.status !== "approved" && (
                     <button title="Approve" onClick={() => setStatusOf(c.id, "approved")} className="p-2 border border-border hover:border-green-600 text-green-600"><FiCheck size={14} /></button>
                   )}
@@ -708,6 +1068,24 @@ function CommentsTab() {
                     className="p-2 border border-border hover:border-primary text-primary"><FiTrash2 size={14} /></button>
                 </div>
               </div>
+              {replyTo === c.id && (
+                <div className="mt-4 flex flex-col gap-2 pl-4 border-l-2 border-primary/30">
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-primary flex items-center gap-1.5"><FiCopy size={10} /> Admin Reply</span>
+                  <textarea 
+                    className="border border-border bg-background p-3 text-sm focus:border-primary outline-none min-h-[80px]" 
+                    placeholder="Type your official response..."
+                    value={replyBody}
+                    onChange={(e) => setReplyBody(e.target.value)}
+                    disabled={replying}
+                  />
+                  <div className="flex justify-end gap-2">
+                    <button onClick={() => setReplyTo(null)} disabled={replying} className="px-4 py-2 text-xs font-mono uppercase border border-border bg-background hover:bg-muted transition-colors">Cancel</button>
+                    <button onClick={() => handleReply(c)} disabled={replying || !replyBody.trim()} className="bg-primary text-white px-4 py-2 text-xs font-mono font-bold uppercase tracking-widest hover:bg-foreground transition-colors disabled:opacity-50">
+                      {replying ? "Posting..." : "Post Reply"}
+                    </button>
+                  </div>
+                </div>
+              )}
             </li>
           ))}
         </ul>
@@ -719,18 +1097,113 @@ function CommentsTab() {
 
 /* ─────────────── Settings ─────────────── */
 function SettingsTab() {
-  const { user } = useAuth()
+  const { user, isAdmin } = useAuth()
+  const toast = useToast()
+  
+  const { data: settingsData, isLoading } = useSettings()
+  const updateSettings = useUpdateSettings()
+  
+  const [formData, setFormData] = useState({
+    hero_title: "",
+    hero_subtitle: "",
+    contact_email: "",
+    contact_phone: "",
+    seo_title: "",
+    seo_description: "",
+  })
+  
+  // Update state when data loads
+  useEffect(() => {
+    if (settingsData) {
+      setFormData({
+        hero_title: settingsData.hero_title || "",
+        hero_subtitle: settingsData.hero_subtitle || "",
+        contact_email: settingsData.contact_email || "",
+        contact_phone: settingsData.contact_phone || "",
+        seo_title: settingsData.seo_title || "",
+        seo_description: settingsData.seo_description || "",
+      })
+    }
+  }, [settingsData])
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))
+  }
+
+  const handleSave = () => {
+    updateSettings.mutate(formData, {
+      onSuccess: () => toast.success("Settings saved successfully."),
+      onError: () => toast.error("Failed to save settings.")
+    })
+  }
+
   return (
     <div>
       <h2 className="text-3xl font-archivo font-extrabold uppercase tracking-tight mb-8">Settings</h2>
-      <div className="border border-border p-6 max-w-lg space-y-4">
-        <div className="flex items-center gap-2 text-green-600 text-xs font-mono uppercase"><FiCheck size={14} /> Signed in</div>
-        <div className="text-sm"><span className="font-mono text-muted-foreground text-xs uppercase block">Name</span>{user?.full_name || "—"}</div>
-        <div className="text-sm"><span className="font-mono text-muted-foreground text-xs uppercase block">Email</span>{user?.email}</div>
-        <div className="text-sm"><span className="font-mono text-muted-foreground text-xs uppercase block">Role</span>{user?.role}</div>
-        <p className="text-[11px] font-mono text-muted-foreground pt-4 border-t border-border">
-          Site-wide settings (logo, contact info, SEO defaults) need a dedicated `Settings` model on the backend — wire when ready.
-        </p>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="border border-border p-6 space-y-4 h-fit">
+          <h3 className="font-archivo font-bold text-lg uppercase tracking-wide border-b border-border pb-2 mb-4">Your Profile</h3>
+          <div className="flex items-center gap-2 text-green-600 text-xs font-mono uppercase"><FiCheck size={14} /> Signed in</div>
+          <div className="text-sm"><span className="font-mono text-muted-foreground text-xs uppercase block">Name</span>{user?.full_name || "—"}</div>
+          <div className="text-sm"><span className="font-mono text-muted-foreground text-xs uppercase block">Email</span>{user?.email}</div>
+          <div className="text-sm"><span className="font-mono text-muted-foreground text-xs uppercase block">Role</span>{user?.role}</div>
+        </div>
+        
+        {isAdmin && (
+          <div className="border border-border p-6 space-y-6">
+            <h3 className="font-archivo font-bold text-lg uppercase tracking-wide border-b border-border pb-2">Global Settings</h3>
+            
+            {isLoading ? <p className="text-sm font-mono text-muted-foreground">Loading settings...</p> : (
+              <div className="space-y-6">
+                {/* Hero Settings */}
+                <div className="space-y-3">
+                  <h4 className="text-xs font-mono uppercase tracking-widest text-primary font-bold">Hero Banner</h4>
+                  <div>
+                    <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground block mb-1">Hero Title</label>
+                    <input type="text" name="hero_title" value={formData.hero_title} onChange={handleChange} className="w-full border border-border bg-background p-2 text-sm focus:border-primary outline-none" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground block mb-1">Hero Subtitle</label>
+                    <input type="text" name="hero_subtitle" value={formData.hero_subtitle} onChange={handleChange} className="w-full border border-border bg-background p-2 text-sm focus:border-primary outline-none" />
+                  </div>
+                </div>
+
+                {/* Contact Settings */}
+                <div className="space-y-3 pt-4 border-t border-border/50">
+                  <h4 className="text-xs font-mono uppercase tracking-widest text-primary font-bold">Contact Info</h4>
+                  <div>
+                    <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground block mb-1">Contact Email</label>
+                    <input type="email" name="contact_email" value={formData.contact_email} onChange={handleChange} className="w-full border border-border bg-background p-2 text-sm focus:border-primary outline-none" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground block mb-1">Contact Phone</label>
+                    <input type="text" name="contact_phone" value={formData.contact_phone} onChange={handleChange} className="w-full border border-border bg-background p-2 text-sm focus:border-primary outline-none" />
+                  </div>
+                </div>
+
+                {/* SEO Settings */}
+                <div className="space-y-3 pt-4 border-t border-border/50">
+                  <h4 className="text-xs font-mono uppercase tracking-widest text-primary font-bold">Default SEO Tags</h4>
+                  <div>
+                    <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground block mb-1">Site SEO Title</label>
+                    <input type="text" name="seo_title" value={formData.seo_title} onChange={handleChange} className="w-full border border-border bg-background p-2 text-sm focus:border-primary outline-none" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground block mb-1">Site Meta Description</label>
+                    <textarea name="seo_description" value={formData.seo_description} onChange={handleChange} className="w-full border border-border bg-background p-2 text-sm focus:border-primary outline-none min-h-[80px]" />
+                  </div>
+                </div>
+
+                <div className="pt-4 flex justify-end">
+                  <button onClick={handleSave} disabled={updateSettings.isPending} className="bg-primary text-white px-6 py-2 text-sm font-mono font-bold uppercase tracking-widest hover:bg-foreground transition-colors disabled:opacity-50">
+                    {updateSettings.isPending ? "Saving..." : "Save Settings"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

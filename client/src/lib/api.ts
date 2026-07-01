@@ -5,8 +5,9 @@ import type {
 } from "./types"
 
 const BASE_URL =
-  import.meta.env.VITE_API_URL ||
-  "https://car-reviewdb.onrender.com"
+  import.meta.env.VITE_API_URL !== undefined
+    ? import.meta.env.VITE_API_URL
+    : "https://automotive-cars.onrender.com"
 
 const TOKEN_KEY = "fa_token"
 
@@ -130,6 +131,11 @@ export const getComments = (reviewId: string, page = 1, limit = 50) =>
 export const createComment = (reviewId: string, data: CommentInput) =>
   apiFetch<Comment>(`/api/reviews/${reviewId}/comments`, { method: "POST", body: JSON.stringify(data) })
 
+export const getSettings = () =>
+  apiFetch<Record<string, any>>(`/api/settings`, { auth: false })
+export const updateSettings = (data: Record<string, any>) =>
+  apiFetch<Record<string, any>>(`/api/settings`, { method: "PUT", auth: true, body: JSON.stringify(data) })
+
 export const getBrands = () => apiFetch<Brand[]>(`/api/brands`)
 
 export const createLead = (data: LeadInput) =>
@@ -203,14 +209,15 @@ export const deleteUser = (id: string) =>
 
 export const adminGetLeads = (filters: Record<string, unknown> = {}) =>
   apiFetchPaged<Lead>(`/api/admin/leads${qs(filters)}`, { auth: true })
-export const updateLead = (id: string, status: Lead["status"]) =>
-  apiFetch<Lead>(`/api/admin/leads/${id}`, { method: "PUT", auth: true, body: JSON.stringify({ status }) })
+export const updateLead = (id: string, data: Partial<Lead>) =>
+  apiFetch<Lead>(`/api/admin/leads/${id}`, { method: "PUT", auth: true, body: JSON.stringify(data) })
 export const deleteLead = (id: string) =>
   apiFetch<{ id: string }>(`/api/admin/leads/${id}`, { method: "DELETE", auth: true })
 
+
 /* ───────────────────────── Admin: analytics + media ───────────────────────── */
 
-export const getAnalytics = () => apiFetch<Analytics>(`/api/admin/analytics`, { auth: true })
+export const getAnalytics = (range?: string) => apiFetch<Analytics>(`/api/admin/analytics${range && range !== 'all' ? `?range=${range}` : ''}`, { auth: true })
 
 export const uploadImage = async (file: File, manufacturer?: string, model?: string): Promise<{ url: string }> => {
   const form = new FormData()

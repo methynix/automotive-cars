@@ -73,7 +73,7 @@ export default function CompareVehiclesPage() {
       <main className="pt-24 pb-24">
         <div className="px-6 md:px-12 max-w-[1400px] mx-auto">
           <header className="mb-10 border-b border-border pb-8">
-            <h1 className="text-5xl md:text-7xl font-archivo font-extrabold uppercase tracking-tighter mb-3">
+            <h1 className="text-4xl md:text-5xl font-archivo font-extrabold uppercase tracking-tighter mb-3">
               COM<span className="text-primary">PARE</span>
             </h1>
             <p className="text-muted-foreground font-mono uppercase tracking-widest text-xs">

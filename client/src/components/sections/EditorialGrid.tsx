@@ -25,7 +25,7 @@ export function EditorialGrid({ reviews }: EditorialGridProps) {
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
           <div>
             <span className="text-sm font-mono text-primary block mb-2 uppercase tracking-widest">Deep Dives</span>
-            <h2 className="text-4xl md:text-5xl font-archivo font-extrabold uppercase">LATEST EDITORIALS</h2>
+            <h2 className="text-4xl md:text-5xl font-archivo font-extrabold uppercase">LATEST <span className="text-primary tracking-normal">EDITORIALS</span></h2>
           </div>
           <Link className="text-sm font-mono text-foreground border-b-2 border-primary pb-1 group flex items-center gap-2 uppercase tracking-widest font-bold" to="/cars">
             VIEW ALL REVIEWS <FiArrowRight className="group-hover:translate-x-1 transition-transform" />
