@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
-import { FiSearch, FiUser, FiSun, FiMoon, FiLogOut, FiX } from "react-icons/fi"
+import { FiSearch, FiUser, FiLogOut, FiX } from "react-icons/fi"
 import { MdMenu } from "react-icons/md"
 import { Button } from "@/components/ui/Button"
 import { useAuth } from "@/lib/auth"

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom"
-import { FiArrowRight } from "react-icons/fi"
+
 import { IoStar } from "react-icons/io5"
 import type { Review } from "@/lib/types"
 import { FALLBACK_IMAGE } from "@/lib/constants"

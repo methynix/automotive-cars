@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Link, useLocation } from "react-router-dom"
-import { FiMessageSquare, FiSend, FiChevronDown, FiLock, FiHeart, FiCornerDownRight, FiX } from "react-icons/fi"
+import { FiMessageSquare, FiSend, FiChevronDown, FiLock, FiHeart, FiCornerDownRight, FiX, FiLoader } from "react-icons/fi"
 import { useComments, useCreateComment, useToggleCommentLike } from "@/hooks/useApi"
 import { useAuth } from "@/lib/auth"
 
@@ -103,8 +103,8 @@ export function Comments({ reviewId, featuredImage }: { reviewId: string, featur
                   
                   {/* Actions */}
                   <div className="flex items-center gap-4 text-xs font-mono font-bold uppercase tracking-widest text-muted-foreground">
-                    <button onClick={() => handleLike(c.id)} className={`inline-flex items-center gap-1.5 transition-colors ${(c.likes?.length ?? 0) > 0 ? 'text-primary' : 'hover:text-foreground'}`}>
-                      <FiHeart size={14} className={(c.likes?.length ?? 0) > 0 ? 'fill-primary' : ''} /> {c._count?.likes || 'Like'}
+                    <button disabled={toggleLike.isPending && toggleLike.variables === c.id} onClick={() => handleLike(c.id)} className={`inline-flex items-center gap-1.5 transition-colors ${(c.likes?.length ?? 0) > 0 ? 'text-primary' : 'hover:text-foreground'} disabled:opacity-50`}>
+                      {toggleLike.isPending && toggleLike.variables === c.id ? <FiLoader size={14} className="animate-spin" /> : <FiHeart size={14} className={(c.likes?.length ?? 0) > 0 ? 'fill-primary' : ''} />} {c._count?.likes || 'Like'}
                     </button>
                     <button onClick={() => { setReplyingTo(replyingTo === c.id ? null : c.id); setReplyBody("") }} className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors">
                       <FiCornerDownRight size={14} /> Reply
@@ -122,8 +122,8 @@ export function Comments({ reviewId, featuredImage }: { reviewId: string, featur
                         onFocus={() => { if (!isAuthenticated) setShowGate(true) }}
                         onChange={(e) => { if (isAuthenticated) setReplyBody(e.target.value) }}
                       />
-                      <button onClick={() => submitReply(c.id)} disabled={createComment.isPending} className="bg-primary text-white px-4 py-2 text-[10px] font-mono font-black uppercase tracking-[0.2em] hover:bg-foreground transition-colors disabled:opacity-60">
-                        {createComment.isPending ? "Posting..." : "Post Reply"}
+                      <button onClick={() => submitReply(c.id)} disabled={createComment.isPending && createComment.variables?.parent_id === c.id} className="bg-primary text-white px-4 py-2 text-[10px] font-mono font-black uppercase tracking-[0.2em] hover:bg-foreground transition-colors disabled:opacity-60 inline-flex items-center gap-2">
+                        {createComment.isPending && createComment.variables?.parent_id === c.id ? <><FiLoader size={12} className="animate-spin" /> Posting...</> : "Post Reply"}
                       </button>
                     </div>
                   )}
@@ -139,8 +139,8 @@ export function Comments({ reviewId, featuredImage }: { reviewId: string, featur
                           </div>
                           <p className="text-sm text-muted-foreground leading-relaxed mb-4">{r.body}</p>
                           <div className="flex items-center gap-4 text-xs font-mono font-bold uppercase tracking-widest text-muted-foreground">
-                            <button onClick={() => handleLike(r.id)} className={`inline-flex items-center gap-1.5 transition-colors ${(r.likes?.length ?? 0) > 0 ? 'text-primary' : 'hover:text-foreground'}`}>
-                              <FiHeart size={14} className={(r.likes?.length ?? 0) > 0 ? 'fill-primary' : ''} /> {r._count?.likes || 'Like'}
+                            <button disabled={toggleLike.isPending && toggleLike.variables === r.id} onClick={() => handleLike(r.id)} className={`inline-flex items-center gap-1.5 transition-colors ${(r.likes?.length ?? 0) > 0 ? 'text-primary' : 'hover:text-foreground'} disabled:opacity-50`}>
+                              {toggleLike.isPending && toggleLike.variables === r.id ? <FiLoader size={14} className="animate-spin" /> : <FiHeart size={14} className={(r.likes?.length ?? 0) > 0 ? 'fill-primary' : ''} />} {r._count?.likes || 'Like'}
                             </button>
                           </div>
                         </li>
@@ -179,10 +179,11 @@ export function Comments({ reviewId, featuredImage }: { reviewId: string, featur
               {err && <p className="text-red-500 text-xs font-mono mb-4">{err}</p>}
               <button
                 onClick={submit}
-                disabled={createComment.isPending}
+                disabled={createComment.isPending && !createComment.variables?.parent_id}
                 className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 text-xs font-mono font-black uppercase tracking-[0.2em] hover:bg-foreground transition-colors disabled:opacity-60"
               >
-                <FiSend size={14} /> {createComment.isPending ? "Posting..." : "Post comment"}
+                {createComment.isPending && !createComment.variables?.parent_id ? <FiLoader size={14} className="animate-spin" /> : <FiSend size={14} />} 
+                {createComment.isPending && !createComment.variables?.parent_id ? "Posting..." : "Post comment"}
               </button>
             </div>
           )}

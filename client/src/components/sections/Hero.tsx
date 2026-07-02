@@ -6,7 +6,7 @@ interface HeroProps {
   reviews: Review[];
 }
 
-export function Hero({ reviews }: HeroProps) {
+export function Hero({ }: HeroProps) {
   return (
     <section className="relative h-[77svh] min-h-[500px] md:min-h-0 md:h-[800px] w-full overflow-hidden flex items-end bg-gradient-to-b from-slate-900 to-black">
       <video

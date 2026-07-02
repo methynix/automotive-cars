@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { Link, useParams } from "react-router-dom"
 import {
-  FiArrowLeft, FiShare2, FiCheck, FiX, FiZap, FiSettings,
+  FiArrowLeft, FiShare2, FiCheck, FiX, FiSettings,
   FiChevronRight, FiChevronLeft, FiCalendar,
 } from "react-icons/fi"
 import { LuSettings2 } from "react-icons/lu"

@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/Button"
 import { getFeaturedReviews, createLead } from "@/lib/api"
 import type { Review } from "@/lib/types"
 import { CATEGORY_IMAGES, FALLBACK_IMAGE } from "@/lib/constants"
-import { FiArrowRight, FiStar, FiZap } from "react-icons/fi"
+import { FiArrowRight } from "react-icons/fi"
 import { IoStar } from "react-icons/io5"
 import { Reveal } from "@/components/ui/Reveal"
 import { motion, useScroll, useTransform } from "framer-motion"
@@ -84,21 +84,7 @@ export default function HomePage() {
   const [newsletterDone, setNewsletterDone] = useState(false)
   const [isSubscribing, setIsSubscribing] = useState(false)
   const fmtPrice = usePriceFormatter()
-  const carousel = useRef<HTMLDivElement>(null)
-  const [carouselWidth, setCarouselWidth] = useState(0)
 
-  useEffect(() => {
-    if (carousel.current) {
-      setCarouselWidth(carousel.current.scrollWidth - carousel.current.offsetWidth)
-    }
-    const handleResize = () => {
-      if (carousel.current) {
-        setCarouselWidth(carousel.current.scrollWidth - carousel.current.offsetWidth)
-      }
-    }
-    window.addEventListener("resize", handleResize)
-    return () => window.removeEventListener("resize", handleResize)
-  }, [])
 
   useEffect(() => {
     getFeaturedReviews(1, 10)
@@ -129,10 +115,7 @@ export default function HomePage() {
     { name: "Electric", image: CATEGORY_IMAGES.Electric },
   ]
 
-  const uniqueBrands = useMemo(() => {
-    const brands = new Set(reviews.map(r => r.manufacturer).filter(Boolean))
-    return brands.size
-  }, [reviews])
+
 
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
