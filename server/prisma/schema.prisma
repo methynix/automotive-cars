@@ -41,8 +41,9 @@ model Profile {
   status        String    @default("active") // active | suspended
   created_at    DateTime  @default(now())
 
-  Review     Review[]  @relation("ProfileReviews")
-  Comment    Comment[] @relation("ProfileComments")
+  Review     Review[]      @relation("ProfileReviews")
+  Comment    Comment[]     @relation("ProfileComments")
+  likes      CommentLike[] @relation("ProfileCommentLikes")
 
   @@map("profiles")
 }
@@ -126,8 +127,22 @@ model Comment {
   profile      Profile?      @relation(fields: [created_by], references: [id], name: "ProfileComments")
   parent       Comment?      @relation("CommentReplies", fields: [parent_id], references: [id])
   replies      Comment[]     @relation("CommentReplies")
+  likes        CommentLike[]
 
   @@map("comments")
+}
+
+model CommentLike {
+  id         String   @id @default(uuid()) @db.Uuid
+  comment_id String   @db.Uuid
+  profile_id String   @db.Uuid
+  created_at DateTime @default(now())
+
+  comment    Comment  @relation(fields: [comment_id], references: [id], onDelete: Cascade)
+  profile    Profile  @relation(fields: [profile_id], references: [id], name: "ProfileCommentLikes", onDelete: Cascade)
+
+  @@unique([comment_id, profile_id])
+  @@map("comment_likes")
 }
 
 model Brand {

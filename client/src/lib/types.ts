@@ -102,6 +102,9 @@ export interface Comment {
   status: CommentStatus
   created_at: string
   parent_id?: string | null
+  replies?: Comment[]
+  _count?: { likes: number }
+  likes?: { profile_id: string }[]
 }
 export interface CommentInput {
   author_name: string

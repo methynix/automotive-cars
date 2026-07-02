@@ -32,6 +32,15 @@ export const useCreateComment = (reviewId: string) => {
   })
 }
 
+export const useToggleCommentLike = (reviewId: string) => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (commentId: string) => api.toggleCommentLike(commentId),
+    // Optimistic UI updates can go here or invalidation
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["comments", reviewId] }),
+  })
+}
+
 export const useCreateLead = () =>
   useMutation({ mutationFn: (data: LeadInput) => api.createLead(data) })
 

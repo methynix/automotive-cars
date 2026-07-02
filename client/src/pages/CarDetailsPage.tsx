@@ -2,7 +2,7 @@ import { useState } from "react"
 import { Link, useParams } from "react-router-dom"
 import {
   FiArrowLeft, FiShare2, FiCheck, FiX, FiZap, FiSettings,
-  FiChevronRight, FiCalendar,
+  FiChevronRight, FiChevronLeft, FiCalendar,
 } from "react-icons/fi"
 import { LuSettings2 } from "react-icons/lu"
 import { Header } from "@/components/layout/Header"
@@ -36,6 +36,7 @@ export default function CarDetailsPage() {
   const [color, setColor] = useState(PAINT[0])
   const [interior, setInterior] = useState(INTERIOR[0])
   const [shareMsg, setShareMsg] = useState(false)
+  const [activeHeroImg, setActiveHeroImg] = useState(0)
 
   // Test-drive lead form
   const [showLead, setShowLead] = useState(false)
@@ -45,12 +46,59 @@ export default function CarDetailsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background"><Header />
-        <div className="pt-32 px-6 max-w-[1200px] mx-auto animate-pulse">
-          <div className="h-[420px] bg-muted/30 mb-8" />
-          <div className="h-10 bg-muted/30 w-1/2 mb-4" />
-          <div className="h-4 bg-muted/20 w-3/4" />
-        </div>
+      <div className="min-h-screen bg-background flex flex-col font-inter selection:bg-primary selection:text-white">
+        <Header />
+        <main className="flex-1">
+          {/* Hero skeleton */}
+          <div className="w-full h-[480px] bg-muted/20 animate-pulse relative overflow-hidden">
+            <div className="absolute bottom-0 left-0 right-0 p-6 md:p-12 max-w-[1280px] mx-auto z-40">
+              <div className="flex items-end justify-between flex-wrap gap-4">
+                <div>
+                  <div className="h-3 w-32 bg-muted/40 mb-3 rounded-sm" />
+                  <div className="h-10 w-64 md:w-96 bg-muted/40 rounded-sm" />
+                </div>
+                <div className="h-10 w-28 bg-muted/40 rounded-sm" />
+              </div>
+            </div>
+          </div>
+
+          <div className="px-6 md:px-12 max-w-[1280px] mx-auto py-6 md:py-12 grid lg:grid-cols-3 gap-12">
+            {/* Main column skeleton */}
+            <div className="lg:col-span-2 space-y-10 md:space-y-12">
+              <div className="space-y-3 md:space-y-6">
+                <div className="h-4 w-32 bg-muted/20 animate-pulse rounded-sm" />
+                <div className="flex flex-wrap items-center justify-between gap-4 md:gap-6 border-b border-border pb-6 md:pb-8 animate-pulse">
+                  <div className="flex items-center gap-8 md:gap-20">
+                    <div className="h-14 w-24 bg-muted/30 rounded-sm" />
+                    <div className="h-10 w-32 bg-muted/30 rounded-sm" />
+                  </div>
+                  <div className="h-14 w-48 bg-muted/30 rounded-sm" />
+                </div>
+              </div>
+
+              <div className="space-y-4 animate-pulse">
+                <div className="h-4 w-full bg-muted/20 rounded-sm" />
+                <div className="h-4 w-full bg-muted/20 rounded-sm" />
+                <div className="h-4 w-[90%] bg-muted/20 rounded-sm" />
+                <div className="h-4 w-[85%] bg-muted/20 rounded-sm" />
+                <div className="h-4 w-[60%] bg-muted/20 rounded-sm" />
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6 animate-pulse">
+                <div className="h-48 border border-border bg-muted/10 p-6" />
+                <div className="h-48 border border-border bg-muted/10 p-6" />
+              </div>
+            </div>
+
+            {/* Sidebar skeleton */}
+            <aside className="space-y-8 animate-pulse">
+              <div className="border border-border p-6 h-[400px] bg-muted/10" />
+              <div className="border border-border p-6 h-[200px] bg-muted/10" />
+              <div className="h-14 w-full bg-muted/20 rounded-sm" />
+            </aside>
+          </div>
+        </main>
+        <Footer />
       </div>
     )
   }
@@ -75,8 +123,48 @@ export default function CarDetailsPage() {
   const gallery = review.gallery || []
   const related = (relatedData?.data ?? []).filter((r) => r.slug !== review.slug).slice(0, 3)
 
+  let heroImages = [
+    { url: review.featured_image || FALLBACK_IMAGE_LG, alt: review.title },
+    ...gallery.map(g => ({ url: g.image_url, alt: g.alt_text || review.title }))
+  ].filter((v, i, a) => a.findIndex(t => t.url === v.url) === i);
+
+  if (heroImages.length === 1) heroImages = [heroImages[0], heroImages[0], heroImages[0]];
+  else if (heroImages.length === 2) heroImages = [heroImages[0], heroImages[1], heroImages[0]];
+
+  const nextHero = () => setActiveHeroImg(p => (p + 1) % heroImages.length)
+  const prevHero = () => setActiveHeroImg(p => (p - 1 + heroImages.length) % heroImages.length)
+
+  const getSlideClass = (i: number) => {
+    let offset = ((i - activeHeroImg) % heroImages.length + heroImages.length) % heroImages.length;
+    if (offset > heroImages.length / 2) offset -= heroImages.length;
+
+    let base = "absolute top-0 h-full transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] cursor-pointer ";
+    
+    if (offset === 0) {
+      base += "z-20 opacity-100 left-[15%] w-[70%] md:left-[20%] md:w-[60%] ";
+    } else if (offset === -1) {
+      base += "z-10 opacity-100 left-0 w-[15%] md:left-0 md:w-[20%] ";
+    } else if (offset === 1) {
+      base += "z-10 opacity-100 left-[85%] w-[15%] md:left-[80%] md:w-[20%] ";
+    } else {
+      base += "z-0 opacity-0 pointer-events-none ";
+      if (offset < -1) base += "-left-[15%] md:-left-[20%] w-[15%] md:w-[20%] ";
+      if (offset > 1) base += "left-[100%] md:left-[100%] w-[15%] md:w-[20%] ";
+    }
+    return base;
+  }
+
   const share = async () => {
-    try { await navigator.clipboard.writeText(window.location.href); setShareMsg(true); setTimeout(() => setShareMsg(false), 2000) } catch { /* ignore */ }
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${review.manufacturer} ${review.model} - Future Automotive`,
+          url: window.location.href,
+        })
+      } catch { /* ignore cancelled share */ }
+    } else {
+      try { await navigator.clipboard.writeText(window.location.href); setShareMsg(true); setTimeout(() => setShareMsg(false), 2000) } catch { /* ignore */ }
+    }
   }
 
   const submitLead = async () => {
@@ -96,24 +184,48 @@ export default function CarDetailsPage() {
     <div className="min-h-screen bg-background font-inter selection:bg-primary selection:text-white">
       <Header />
       <main>
-        {/* Hero image with live paint overlay */}
-        <div className="relative h-[480px] overflow-hidden bg-black">
-          <img src={review.featured_image || FALLBACK_IMAGE_LG} alt={review.title}
-            className="w-full h-full object-cover"
-            onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE_LG }} />
-          {/* Configurator paint tint (visual; true per-colour shots need image assets) */}
-          <div className="absolute inset-0 mix-blend-multiply pointer-events-none transition-colors duration-500"
+        {/* Hero image carousel */}
+        <div className="relative h-[480px] overflow-hidden bg-black group">
+          <div className="w-full h-full relative">
+            {heroImages.map((img, i) => {
+              let offset = ((i - activeHeroImg) % heroImages.length + heroImages.length) % heroImages.length;
+              if (offset > heroImages.length / 2) offset -= heroImages.length;
+              const isCenter = offset === 0;
+              
+              return (
+                <div key={i} className={getSlideClass(i)} onClick={() => {
+                  if (offset === 1) nextHero();
+                  if (offset === -1) prevHero();
+                }}>
+                  <img src={img.url} alt={img.alt} className={`w-full h-full object-cover transition-all duration-700 ${isCenter ? 'brightness-100' : 'brightness-50 hover:brightness-75'}`} onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE_LG }} />
+                  {!isCenter && <div className="absolute inset-0 bg-black/20 pointer-events-none" />}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Configurator paint tint */}
+          <div className="absolute inset-0 mix-blend-multiply pointer-events-none transition-colors duration-500 z-30"
             style={{ backgroundColor: color.hex, opacity: color.name === "Arctic White" ? 0.05 : 0.28 }} />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
-          <div className="absolute bottom-0 left-0 right-0 p-6 md:p-12 max-w-[1280px] mx-auto">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 z-30 pointer-events-none" />
+
+          {/* Controls */}
+          <button onClick={prevHero} className="absolute left-4 top-1/2 -translate-y-1/2 z-40 bg-black/50 hover:bg-primary text-white p-3 rounded-full backdrop-blur-md transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100">
+            <FiChevronLeft size={24} />
+          </button>
+          <button onClick={nextHero} className="absolute right-4 top-1/2 -translate-y-1/2 z-40 bg-black/50 hover:bg-primary text-white p-3 rounded-full backdrop-blur-md transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100">
+            <FiChevronRight size={24} />
+          </button>
+
+          <div className="absolute bottom-0 left-0 right-0 p-6 md:p-12 max-w-[1280px] mx-auto z-40 pointer-events-none">
             <div className="flex items-end justify-between flex-wrap gap-4">
-              <div>
+              <div className="pointer-events-auto">
                 <span className="text-[11px] font-mono font-bold text-primary uppercase tracking-[0.3em]">{review.manufacturer}{review.body_style ? ` · ${review.body_style}` : ""}</span>
                 <h1 className="text-3xl md:text-4xl font-archivo font-bold uppercase tracking-normal text-white mt-2">
                   {review.model} <span className="text-white/60">{review.year}</span>
                 </h1>
               </div>
-              <button onClick={share} className="relative inline-flex items-center gap-2 border border-white/40 text-white px-4 py-2 text-xs font-mono uppercase tracking-widest hover:bg-white hover:text-black transition-colors">
+              <button onClick={share} className="relative inline-flex items-center gap-2 border border-white/40 text-white px-4 py-2 text-xs font-mono uppercase tracking-widest hover:bg-white hover:text-black transition-colors pointer-events-auto">
                 <FiShare2 size={14} /> Share
                 {shareMsg && <span className="absolute -top-9 right-0 bg-white text-black px-3 py-1 text-[10px] whitespace-nowrap">Link copied</span>}
               </button>
@@ -121,31 +233,33 @@ export default function CarDetailsPage() {
           </div>
         </div>
 
-        <div className="px-6 md:px-12 max-w-[1280px] mx-auto py-12 grid lg:grid-cols-3 gap-12">
+        <div className="px-6 md:px-12 max-w-[1280px] mx-auto py-6 md:py-12 grid lg:grid-cols-3 gap-12">
           {/* Main column */}
-          <div className="lg:col-span-2 space-y-12">
+          <div className="lg:col-span-2 space-y-10 md:space-y-12">
             
-            <Link to="/cars" className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary text-xs font-mono uppercase tracking-widest transition-colors -mb-4">
-              <FiArrowLeft size={14} /> Back to garage
-            </Link>
+            <div className="space-y-3 md:space-y-6">
+              <Link to="/cars" className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary text-xs font-mono uppercase tracking-widest transition-colors">
+                <FiArrowLeft size={14} /> Back to garage
+              </Link>
 
-            {/* Score + price + CTA */}
-            <div className="flex flex-wrap items-center justify-between gap-6 border-b border-border pb-8">
-              <div className="flex items-center gap-8 md:gap-20">
-                {review.rating != null && (
+              {/* Score + price + CTA */}
+              <div className="flex flex-wrap items-center justify-between gap-4 md:gap-6 border-b border-border pb-6 md:pb-8">
+                <div className="flex items-center gap-8 md:gap-20">
+                  {review.rating != null && (
+                    <div>
+                      <div className="text-5xl font-archivo font-extrabold">{review.rating.toFixed(1)}<span className="text-xl text-muted-foreground">/10</span></div>
+                      <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground">Editor Score</div>
+                    </div>
+                  )}
                   <div>
-                    <div className="text-5xl font-archivo font-extrabold">{review.rating.toFixed(1)}<span className="text-xl text-muted-foreground">/10</span></div>
-                    <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground">Editor Score</div>
+                    <Price usd={review.specs?.price} size="lg" />
                   </div>
-                )}
-                <div>
-                  <Price usd={review.specs?.price} size="lg" />
                 </div>
+                <button onClick={() => { setShowLead(true); setLeadDone(false) }}
+                  className="inline-flex items-center gap-2 bg-primary text-white px-6 py-4 text-xs font-mono font-black uppercase tracking-[0.2em] hover:bg-foreground transition-colors">
+                  <FiCalendar size={14} /> Book a Test Drive
+                </button>
               </div>
-              <button onClick={() => { setShowLead(true); setLeadDone(false) }}
-                className="inline-flex items-center gap-2 bg-primary text-white px-6 py-4 text-xs font-mono font-black uppercase tracking-[0.2em] hover:bg-foreground transition-colors">
-                <FiCalendar size={14} /> Book a Test Drive
-              </button>
             </div>
 
             {/* Body */}
@@ -239,8 +353,8 @@ export default function CarDetailsPage() {
             </div>
 
             <button onClick={() => { setShowLead(true); setLeadDone(false) }}
-              className="w-full bg-foreground text-background py-4 text-xs font-mono font-black uppercase tracking-[0.2em] hover:bg-primary hover:text-white transition-colors">
-              Enquire about this {review.model}
+              className="w-full inline-flex justify-center items-center gap-2 bg-primary text-white py-4 text-xs font-mono font-black uppercase tracking-[0.2em] hover:bg-foreground transition-colors">
+              <FiCalendar size={14} /> Enquire about this {review.model}
             </button>
           </aside>
         </div>
@@ -267,7 +381,7 @@ export default function CarDetailsPage() {
         )}
         {/* Comments — at the very bottom, collapsible + sign-in to post */}
         <div className="px-6 md:px-12 max-w-[1280px] mx-auto pb-16">
-          <Comments reviewId={review.id} />
+          <Comments reviewId={review.id} featuredImage={review.featured_image || undefined} />
         </div>
       </main>
       <Footer />

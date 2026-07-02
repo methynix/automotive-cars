@@ -126,7 +126,10 @@ export const getReviewBySlug = (slug: string) =>
   apiFetch<Review>(`/api/reviews/${slug}`)
 
 export const getComments = (reviewId: string, page = 1, limit = 50) =>
-  apiFetchPaged<Comment>(`/api/reviews/${reviewId}/comments${qs({ page, limit })}`)
+  apiFetchPaged<Comment>(`/api/reviews/${reviewId}/comments${qs({ page, limit })}`, { auth: true })
+
+export const toggleCommentLike = (commentId: string) =>
+  apiFetch<{ action: 'liked' | 'unliked' }>(`/api/comments/${commentId}/like`, { method: "POST", auth: true })
 
 export const createComment = (reviewId: string, data: CommentInput) =>
   apiFetch<Comment>(`/api/reviews/${reviewId}/comments`, { method: "POST", body: JSON.stringify(data) })

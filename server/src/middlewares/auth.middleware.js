@@ -42,7 +42,26 @@ function authenticate(allowedRoles) {
   };
 }
 
+export const optionalAuth = async (req, res, next) => {
+  try {
+    const auth = req.headers.authorization;
+    if (!auth || !auth.startsWith('Bearer ')) return next();
+    
+    const token = auth.split(' ')[1];
+    const secret = process.env.SUPABASE_JWT_SECRET;
+    if (!secret) return next();
+
+    const decoded = jwt.verify(token, secret);
+    req.user = { id: decoded.sub, email: decoded.email };
+    return next();
+  } catch {
+    return next();
+  }
+};
+
 // admin only — user management, role changes
 export const requireAdmin = authenticate(['admin']);
 // admin or operator — day-to-day content management
 export const requireStaff = authenticate(['admin', 'operator']);
+// any authenticated user — liking, commenting
+export const requireAuth = authenticate(['admin', 'operator', 'user']);

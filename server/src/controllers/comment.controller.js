@@ -7,7 +7,8 @@ export const CommentController = {
       const { id } = req.params;
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 20;
-      const result = await CommentService.getCommentsByReview(id, { page, limit });
+      const userId = req.user?.id;
+      const result = await CommentService.getCommentsByReview(id, userId, { page, limit });
       return success(res, result.data, 200, { page: result.page, limit: result.limit, total: result.total });
     } catch (err) {
       next(err);
@@ -20,6 +21,17 @@ export const CommentController = {
       const payload = req.body;
       const data = await CommentService.createComment(id, payload);
       return success(res, data, 201);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async toggleLike(req, res, next) {
+    try {
+      const { id } = req.params;
+      const userId = req.user.id;
+      const data = await CommentService.toggleLike(id, userId);
+      return success(res, data, 200);
     } catch (err) {
       next(err);
     }
