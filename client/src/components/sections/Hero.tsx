@@ -8,7 +8,7 @@ interface HeroProps {
 
 export function Hero({ reviews }: HeroProps) {
   return (
-    <section className="relative h-[75svh] min-h-[500px] md:min-h-0 md:h-[800px] w-full overflow-hidden flex items-end bg-gradient-to-b from-slate-900 to-black">
+    <section className="relative h-[77svh] min-h-[500px] md:min-h-0 md:h-[800px] w-full overflow-hidden flex items-end bg-gradient-to-b from-slate-900 to-black">
       <video
         className="absolute inset-0 w-full h-full object-cover"
         src="https://res.cloudinary.com/dwt1u991q/video/upload/v1782556431/ad2_y62xjs.mp4"
@@ -20,7 +20,7 @@ export function Hero({ reviews }: HeroProps) {
         playsInline
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-      <div className="relative z-10 w-full px-6 md:px-12 max-w-[1280px] mx-auto pb-8">
+      <div className="relative z-10 w-full px-5 md:px-12 max-w-[1300px] mx-auto pb-8">
         <div className="max-w-2xl mb-10">
           <h1 className="text-5xl md:text-[4rem] font-archivo font-extrabold text-white mb-6 leading-[0.9] tracking-normal uppercase">
             FUTURE <br /> <span className="text-[#C91F20]">AUTOMOTIVE</span>

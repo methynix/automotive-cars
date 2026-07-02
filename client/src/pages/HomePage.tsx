@@ -8,10 +8,11 @@ import { BrandMarquee } from "@/components/sections/BrandMarquee"
 import { FeatureCards } from "@/components/sections/FeatureCards"
 import { EditorialGrid } from "@/components/sections/EditorialGrid"
 import { Button } from "@/components/ui/Button"
-import { getReviews } from "@/lib/api"
+import { getFeaturedReviews } from "@/lib/api"
 import type { Review } from "@/lib/types"
 import { CATEGORY_IMAGES, FALLBACK_IMAGE } from "@/lib/constants"
 import { FiArrowRight, FiStar, FiZap } from "react-icons/fi"
+import { IoStar } from "react-icons/io5"
 import { Reveal } from "@/components/ui/Reveal"
 
 export default function HomePage() {
@@ -22,7 +23,7 @@ export default function HomePage() {
   const fmtPrice = usePriceFormatter()
 
   useEffect(() => {
-    getReviews({ limit: 20 })
+    getFeaturedReviews(1, 20)
       .then((res) => {
         if (res?.data) {
           setReviews(res.data)
@@ -122,15 +123,15 @@ export default function HomePage() {
                   <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6">
                     <div>
                       <span className="text-[11px] font-mono font-bold text-primary uppercase tracking-[0.3em] block mb-4">Curated Collection</span>
-                      <h2 className="text-4xl md:text-5xl font-archivo font-extrabold uppercase tracking-tighter leading-none">
+                      <h2 className="text-2xl md:text-4xl font-archivo font-extrabold uppercase tracking-tighter leading-none">
                         EXPLORE <span className="text-primary tracking-normal">THE FLEET</span>
                       </h2>
-                      <p className="text-sm font-mono text-slate-500 mt-4 uppercase tracking-[0.3em] max-w-xl">
-                        {reviews.length} vehicles across {uniqueBrands} manufacturers — rigorously tested and reviewed
+                      <p className="text-sm font-mono text-slate-500 mt-4 uppercase tracking-normal max-w-xl">
+                        Vehicles across multiple manufacturers — rigorously tested and reviewed
                       </p>
                     </div>
                     <Link to="/cars">
-                      <Button className="px-8 py-5 text-[11px] font-mono font-black uppercase tracking-[0.3em] group">
+                      <Button className="px-8 py-5 text-[11px] font-mono font-black uppercase tracking-normal group">
                         View All Vehicles
                         <FiArrowRight className="ml-3 group-hover:translate-x-1 transition-transform" />
                       </Button>
@@ -143,7 +144,7 @@ export default function HomePage() {
                   <Reveal animation="zoom-in" delay={200}>
                     <Link
                       to={`/cars/${reviews[0].slug}`}
-                      className="group grid grid-cols-1 lg:grid-cols-2 border border-border bg-card mb-px hover:border-primary transition-colors block"
+                      className="group grid grid-cols-1 lg:grid-cols-2 bg-background border border-border rounded-lg shadow-md hover:bg-muted/40 transition-all duration-300 block overflow-hidden"
                     >
                       <div className="aspect-[4/3] lg:aspect-auto overflow-hidden relative">
                         <img
@@ -181,39 +182,55 @@ export default function HomePage() {
                 )}
 
                 {/* Grid cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px bg-border mt-px">
-                  {reviews.slice(1).map((r, idx) => (
-                    <Reveal key={r.id} animation="fade-up" delay={100 + idx * 50}>
-                      <Link
-                        to={`/cars/${r.slug}`}
-                        className="group bg-card p-6 md:p-8 hover:bg-muted/40 transition-all duration-300 flex flex-col h-full"
-                      >
-                        <div className="aspect-[4/3] overflow-hidden mb-6 relative">
-                          <img
-                            src={r.featured_image || FALLBACK_IMAGE}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                            alt={r.title}
-                          />
-                          <div className="absolute top-3 left-3 bg-foreground/80 text-white text-[9px] font-mono font-bold px-2 py-1 uppercase tracking-widest">
-                            {r.manufacturer}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-x-[22px] mt-6">
+                  {Array.from({ length: 8 }).map((_, idx) => {
+                    const r = reviews[idx + 1];
+                    if (!r) {
+                      return (
+                        <div key={`skeleton-${idx}`} className="bg-muted/50 border border-border rounded-lg shadow-sm h-full min-h-[380px] animate-pulse flex flex-col">
+                          <div className="aspect-[4/3] bg-muted w-full" />
+                          <div className="p-4 md:p-6 flex flex-col flex-1 gap-4">
+                            <div className="h-3 w-1/3 bg-muted-foreground/20 rounded" />
+                            <div className="h-6 w-2/3 bg-muted-foreground/20 rounded" />
+                            <div className="flex-1" />
+                            <div className="h-4 w-full bg-muted-foreground/20 rounded" />
                           </div>
                         </div>
-                        <span className="text-[11px] font-mono font-bold text-primary uppercase tracking-widest mb-1.5">{r.manufacturer}</span>
-                        <h3 className="text-xl font-archivo font-black uppercase tracking-tight mb-3 group-hover:text-primary transition-colors leading-tight">
-                          {r.model}
-                        </h3>
-                        <p className="text-[13px] text-slate-600 leading-relaxed mb-5 line-clamp-2 flex-1">{r.excerpt}</p>
-                        <div className="flex items-center justify-between text-[11px] font-mono text-slate-700 font-bold border-t border-slate-200 pt-4 mt-auto">
-                          <span className="flex items-center gap-1">
-                            <FiZap size={12} className="text-primary" /> {r.specs?.horsepower ?? "—"} HP
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <FiStar size={12} className={r.rating && r.rating >= 8 ? "text-primary" : "text-muted-foreground"} /> {r.rating ?? "—"}
-                          </span>
-                        </div>
-                      </Link>
-                    </Reveal>
-                  ))}
+                      );
+                    }
+                    return (
+                      <Reveal key={r.id} animation="fade-up" delay={100 + idx * 50}>
+                        <Link
+                          to={`/cars/${r.slug}`}
+                          className="group bg-background border border-border rounded-lg shadow-md p-4 md:p-6 hover:bg-muted/40 transition-all duration-300 flex flex-col h-full overflow-hidden"
+                        >
+                          <div className="aspect-[4/3] overflow-hidden mb-6 relative">
+                            <img
+                              src={r.featured_image || FALLBACK_IMAGE}
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                              alt={r.title}
+                            />
+                            <div className="absolute top-3 left-3 bg-foreground/80 text-white text-[9px] font-mono font-bold px-2 py-1 uppercase tracking-widest">
+                              {r.manufacturer}
+                            </div>
+                          </div>
+                          <span className="text-[11px] font-mono font-bold text-primary uppercase tracking-widest mb-1.5">{r.manufacturer}</span>
+                          <h3 className="text-xl font-archivo font-black uppercase tracking-tight mb-3 group-hover:text-primary transition-colors leading-tight">
+                            {r.model}
+                          </h3>
+                          <p className="text-[13px] text-slate-600 leading-relaxed mb-5 line-clamp-2 flex-1">{r.excerpt}</p>
+                          <div className="flex items-center justify-between text-[11px] font-mono text-slate-700 font-bold border-t border-slate-200 pt-4 mt-auto">
+                            <span className="flex items-center gap-1">
+                              {r.specs?.horsepower ?? "—"} HP
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <IoStar size={12} className="text-[#FFDF00]" /> {r.rating ?? "—"}
+                            </span>
+                          </div>
+                        </Link>
+                      </Reveal>
+                    );
+                  })}
                 </div>
               </div>
             </section>

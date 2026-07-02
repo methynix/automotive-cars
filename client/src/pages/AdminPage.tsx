@@ -248,6 +248,11 @@ function VehiclesTab() {
     catch (e: any) { toast.error("Failed to update status.") }
   }
 
+  const bulkFeatured = async (featured: boolean) => {
+    try { await Promise.all(selected.map(id => updateReview.mutateAsync({ id, data: { featured } }))); toast.success(`Vehicles marked as ${featured ? "featured" : "not featured"}.`); setSelected([]) }
+    catch (e: any) { toast.error("Failed to update featured status.") }
+  }
+
   const openNew = () => { setEditing(null); setIsClone(false); setOpen(true) }
   const openEdit = (r: Review) => { setEditing(r); setIsClone(false); setOpen(true) }
   const openClone = (r: Review) => { setEditing(r); setIsClone(true); setOpen(true) }
@@ -283,6 +288,8 @@ function VehiclesTab() {
             <>
               <button onClick={() => bulkStatus("published")} className="text-xs font-mono uppercase tracking-widest px-3 py-1.5 border border-border bg-background hover:border-primary transition-colors">Publish</button>
               <button onClick={() => bulkStatus("draft")} className="text-xs font-mono uppercase tracking-widest px-3 py-1.5 border border-border bg-background hover:border-primary transition-colors">Draft</button>
+              <button onClick={() => bulkFeatured(true)} className="text-xs font-mono uppercase tracking-widest px-3 py-1.5 border border-border bg-background hover:border-primary transition-colors">Feature</button>
+              <button onClick={() => bulkFeatured(false)} className="text-xs font-mono uppercase tracking-widest px-3 py-1.5 border border-border bg-background hover:border-primary transition-colors">Unfeature</button>
               <button onClick={bulkDelete} className="text-xs font-mono uppercase tracking-widest px-3 py-1.5 border border-red-500/30 text-red-600 bg-red-500/10 hover:bg-red-500 hover:text-white transition-colors">Delete</button>
             </>
           )}
@@ -560,9 +567,12 @@ function VehicleForm({ initial, isClone, onClose, onSave, saving, isAdmin }: {
           <Field label="Price ($)"><input type="number" min="0" className={inputCls} value={form.specs?.price ?? 0} onChange={(e) => setSpec({ price: parseFloat(e.target.value) })} /></Field>
           <Field label="Mileage (km)"><input type="number" min="0" className={inputCls} value={form.specs?.mileage ?? 0} onChange={(e) => setSpec({ mileage: parseInt(e.target.value) })} /></Field>
           <Field label="Horsepower"><input type="number" min="0" className={inputCls} value={form.specs?.horsepower ?? ""} onChange={(e) => setSpec({ horsepower: e.target.value === "" ? undefined : parseInt(e.target.value) })} /></Field>
+          <Field label="Torque (Nm)"><input type="number" min="0" className={inputCls} value={form.specs?.torque ?? ""} onChange={(e) => setSpec({ torque: e.target.value === "" ? undefined : parseInt(e.target.value) })} /></Field>
           <Field label="0–100 (s)"><input className={inputCls} value={form.specs?.acceleration ?? ""} onChange={(e) => setSpec({ acceleration: e.target.value })} /></Field>
+          <Field label="Transmission"><input className={inputCls} value={form.specs?.transmission ?? ""} onChange={(e) => setSpec({ transmission: e.target.value })} /></Field>
           <Field label="Drivetrain"><input className={inputCls} value={form.specs?.drivetrain ?? ""} onChange={(e) => setSpec({ drivetrain: e.target.value })} /></Field>
           <Field label="Fuel type"><input className={inputCls} value={form.specs?.fuel_type ?? ""} onChange={(e) => setSpec({ fuel_type: e.target.value })} /></Field>
+          <Field label="Fuel economy"><input className={inputCls} value={form.specs?.fuel_economy ?? ""} onChange={(e) => setSpec({ fuel_economy: e.target.value })} /></Field>
         </div>
 
         <div className="mt-4 space-y-4">

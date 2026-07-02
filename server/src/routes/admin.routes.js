@@ -25,7 +25,7 @@ router.use('/api/admin', requireStaff);
 // only admins can publish, delete or restore.
 router.post('/api/admin/reviews', validate(createReviewSchema), ReviewController.create);
 router.get('/api/admin/reviews', ReviewController.adminList);
-router.put('/api/admin/reviews/:id', validateUUID(), validate(updateReviewSchema), ReviewController.update);
+router.patch('/api/admin/reviews/:id', validateUUID(), validate(updateReviewSchema), ReviewController.update);
 router.patch('/api/admin/reviews/:id/publish', requireAdmin, validateUUID(), validate(setPublishSchema), ReviewController.setPublish);
 router.delete('/api/admin/reviews/:id', requireAdmin, validateUUID(), ReviewController.remove);
 router.post('/api/admin/reviews/:id/restore', requireAdmin, validateUUID(), ReviewController.restore);

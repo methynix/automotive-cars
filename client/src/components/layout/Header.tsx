@@ -80,8 +80,8 @@ export function Header() {
           <Button size="icon" className="md:hidden bg-red-600 hover:bg-red-700 text-white rounded-md" onClick={() => setMenuOpen((o) => !o)} aria-label="Menu">
             {menuOpen ? <FiX className="text-2xl" /> : <MdMenu className="text-2xl" />}
           </Button>
-          <Button size="icon" className="hidden md:flex bg-red-600 hover:bg-red-700 text-white rounded-md" onClick={() => setDesktopModalOpen(true)} aria-label="Settings">
-            <MdMenu className="text-2xl" />
+          <Button size="icon" className="hidden md:flex relative z-[210] bg-red-600 hover:bg-red-700 text-white rounded-md" onClick={() => setDesktopModalOpen((o) => !o)} aria-label="Settings">
+            {desktopModalOpen ? <FiX className="text-2xl" /> : <MdMenu className="text-2xl" />}
           </Button>
         </div>
       </nav>
@@ -149,7 +149,7 @@ export function Header() {
       {desktopModalOpen && (
         <>
           {/* Click away overlay */}
-          <div className="hidden md:block fixed inset-0 w-screen h-screen z-[-1]" onClick={() => setDesktopModalOpen(false)} />
+          <div className="hidden md:block fixed inset-0 w-screen h-screen z-[190]" onClick={() => setDesktopModalOpen(false)} />
           
           <div className="hidden md:block absolute top-full right-5 md:right-12 mt-2 w-[320px] bg-background border border-border shadow-2xl p-6 z-[200] animate-in fade-in slide-in-from-top-4 duration-200">
             <h3 className="text-lg font-archivo font-bold uppercase mb-5 tracking-tighter border-b border-border/40 pb-3">Settings</h3>

@@ -167,7 +167,7 @@ export const createReview = (data: ReviewInput) =>
   apiFetch<Review>(`/api/admin/reviews`, { method: "POST", auth: true, body: JSON.stringify(data) })
 
 export const updateReview = (id: string, data: Partial<ReviewInput>) =>
-  apiFetch<Review>(`/api/admin/reviews/${id}`, { method: "PUT", auth: true, body: JSON.stringify(data) })
+  apiFetch<Review>(`/api/admin/reviews/${id}`, { method: "PATCH", auth: true, body: JSON.stringify(data) })
 
 export const setReviewPublish = (id: string, status: "draft" | "published") =>
   apiFetch<Review>(`/api/admin/reviews/${id}/publish`, { method: "PATCH", auth: true, body: JSON.stringify({ status }) })
