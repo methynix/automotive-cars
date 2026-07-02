@@ -33,6 +33,8 @@ export const CONDITIONS: { value: "new" | "used" | "certified"; label: string }[
 
 export const DRIVETRAINS = ["Rear-Wheel Drive", "All-Wheel Drive", "Front-Wheel Drive"]
 
+export const FUEL_TYPES = ["Petrol", "Diesel", "Electric", "Hybrid", "Plug-in Hybrid"]
+
 // value maps to the backend sort keys in review.service.js -> buildOrderBy()
 export const SORT_OPTIONS: { value: string; label: string }[] = [
   { value: "newest", label: "Newest" },

@@ -11,6 +11,7 @@ import healthRoutes from './routes/health.routes.js';
 import sitemapRoutes from './routes/sitemap.routes.js';
 import newsRoutes from './routes/news.routes.js';
 import authRoutes from './routes/auth.routes.js';
+import accountRoutes from './routes/account.routes.js';
 import settingsRoutes from './routes/settings.routes.js';
 import { errorHandler } from './middlewares/error.middleware.js';
 import { swaggerSpec } from './config/swagger.js';
@@ -64,6 +65,7 @@ app.use(adminRoutes);
 app.use(uploadRoutes);
 app.use(newsRoutes);
 app.use(authRoutes);
+app.use(accountRoutes);
 app.use('/api/settings', settingsRoutes);
 
 app.use((err, req, res, next) => {

@@ -32,6 +32,13 @@ enum LeadStatus {
   closed
 }
 
+enum TestDriveStatus {
+  pending
+  confirmed
+  completed
+  cancelled
+}
+
 model Profile {
   id            String    @id @default(uuid()) @db.Uuid
   email         String    @unique
@@ -44,6 +51,10 @@ model Profile {
   Review     Review[]      @relation("ProfileReviews")
   Comment    Comment[]     @relation("ProfileComments")
   likes      CommentLike[] @relation("ProfileCommentLikes")
+  saved_cars SavedCar[]
+  test_drives TestDrive[]
+  leads      Lead[]
+  preference UserPreference?
 
   @@map("profiles")
 }
@@ -75,6 +86,8 @@ model Review {
   gallery        ReviewGallery[]
   comments       Comment[]
   leads          Lead[]
+  saved_by       SavedCar[]
+  test_drives    TestDrive[]
 
   @@map("reviews")
 }
@@ -160,6 +173,7 @@ model Brand {
 model Lead {
   id                 String     @id @default(uuid()) @db.Uuid
   review_id          String?    @db.Uuid
+  profile_id         String?    @db.Uuid
   full_name          String
   email              String
   phone              String?
@@ -170,6 +184,7 @@ model Lead {
   created_at         DateTime   @default(now())
 
   review             Review?    @relation(fields: [review_id], references: [id], onDelete: SetNull)
+  profile            Profile?   @relation(fields: [profile_id], references: [id], onDelete: SetNull)
 
   @@map("leads")
 }
@@ -180,4 +195,55 @@ model Setting {
   updated_at DateTime @updatedAt
 
   @@map("settings")
+}
+
+// A customer's "Virtual Garage" — vehicles saved for later.
+model SavedCar {
+  id         String   @id @default(uuid()) @db.Uuid
+  profile_id String   @db.Uuid
+  review_id  String   @db.Uuid
+  created_at DateTime @default(now())
+
+  profile    Profile  @relation(fields: [profile_id], references: [id], onDelete: Cascade)
+  review     Review   @relation(fields: [review_id], references: [id], onDelete: Cascade)
+
+  @@unique([profile_id, review_id])
+  @@map("saved_cars")
+}
+
+// Test-drive appointments. profile_id is optional so anonymous visitors can book too.
+model TestDrive {
+  id                 String          @id @default(uuid()) @db.Uuid
+  profile_id         String?         @db.Uuid
+  review_id          String?         @db.Uuid
+  full_name          String
+  email              String
+  phone              String?
+  preferred_date     DateTime
+  preferred_time     String?
+  preferred_location String?
+  message            String?
+  status             TestDriveStatus @default(pending)
+  created_at         DateTime        @default(now())
+
+  profile            Profile?        @relation(fields: [profile_id], references: [id], onDelete: SetNull)
+  review             Review?         @relation(fields: [review_id], references: [id], onDelete: SetNull)
+
+  @@map("test_drives")
+}
+
+// Preference Center — one row per customer (smart-filter defaults + stock alerts opt-in).
+model UserPreference {
+  id              String   @id @default(uuid()) @db.Uuid
+  profile_id      String   @unique @db.Uuid
+  body_styles     String[]
+  budget_min      Int?
+  budget_max      Int?
+  fuel_types      String[]
+  notify_on_match Boolean  @default(false)
+  updated_at      DateTime @updatedAt
+
+  profile         Profile  @relation(fields: [profile_id], references: [id], onDelete: Cascade)
+
+  @@map("user_preferences")
 }

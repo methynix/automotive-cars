@@ -2,7 +2,7 @@ import { useState } from "react"
 import { Link, useParams } from "react-router-dom"
 import {
   FiArrowLeft, FiShare2, FiCheck, FiX, FiSettings,
-  FiChevronRight, FiChevronLeft, FiCalendar,
+  FiChevronRight, FiChevronLeft, FiCalendar, FiHeart,
 } from "react-icons/fi"
 import { LuSettings2 } from "react-icons/lu"
 import { Header } from "@/components/layout/Header"
@@ -10,7 +10,10 @@ import { Footer } from "@/components/layout/Footer"
 import { Reveal } from "@/components/ui/Reveal"
 import { Comments } from "@/components/sections/Comments"
 import { Price } from "@/components/ui/Price"
-import { useReview, useReviews, useCreateLead } from "@/hooks/useApi"
+import { useReview, useReviews } from "@/hooks/useApi"
+import { useSavedCars } from "@/hooks/useSavedCars"
+import { useToast } from "@/lib/toast"
+import { bookTestDrive } from "@/lib/api"
 import { FALLBACK_IMAGE, FALLBACK_IMAGE_LG, DEALER_LOCATIONS } from "@/lib/constants"
 
 const PAINT = [
@@ -30,7 +33,8 @@ export default function CarDetailsPage() {
   const { id: slug } = useParams()
   const { data: review, isLoading, isError } = useReview(slug)
   const { data: relatedData } = useReviews({ limit: 3, sort: "newest" })
-  const createLead = useCreateLead()
+  const toast = useToast()
+  const { isSaved, toggle, isBusy } = useSavedCars()
 
   const [lightbox, setLightbox] = useState<string | null>(null)
   const [color, setColor] = useState(PAINT[0])
@@ -38,10 +42,11 @@ export default function CarDetailsPage() {
   const [shareMsg, setShareMsg] = useState(false)
   const [activeHeroImg, setActiveHeroImg] = useState(0)
 
-  // Test-drive lead form
+  // Test-drive booking form
   const [showLead, setShowLead] = useState(false)
   const [leadDone, setLeadDone] = useState(false)
-  const [lead, setLead] = useState({ full_name: "", email: "", phone: "", preferred_location: DEALER_LOCATIONS[0], message: "" })
+  const [booking, setBooking] = useState(false)
+  const [lead, setLead] = useState({ full_name: "", email: "", phone: "", preferred_date: "", preferred_time: "", preferred_location: DEALER_LOCATIONS[0], message: "" })
   const [leadErr, setLeadErr] = useState<string | null>(null)
 
   if (isLoading) {
@@ -118,6 +123,7 @@ export default function CarDetailsPage() {
   }
 
   const content = review.content || {}
+  const descriptionHtml = typeof content.body === "string" ? content.body : ""
   const pros = (content.pros as string[]) || []
   const cons = (content.cons as string[]) || []
   const gallery = review.gallery || []
@@ -172,12 +178,32 @@ export default function CarDetailsPage() {
     if (lead.full_name.trim().length < 2) return setLeadErr("Please enter your name.")
     if (!/^\S+@\S+\.\S+$/.test(lead.email)) return setLeadErr("Please enter a valid email.")
     if (lead.phone.trim().length < 6) return setLeadErr("Please enter a valid phone number.")
+    if (!lead.preferred_date) return setLeadErr("Please choose a preferred date.")
+    setBooking(true)
     try {
-      await createLead.mutateAsync({ review_id: review.id, ...lead })
+      await bookTestDrive({
+        review_id: review.id,
+        full_name: lead.full_name.trim(),
+        email: lead.email.trim(),
+        phone: lead.phone.trim(),
+        preferred_date: lead.preferred_date,
+        preferred_time: lead.preferred_time || undefined,
+        preferred_location: lead.preferred_location,
+        message: lead.message || undefined,
+      })
       setLeadDone(true)
     } catch (e: any) {
       setLeadErr(e?.message || "Could not submit your request.")
+    } finally {
+      setBooking(false)
     }
+  }
+
+  const handleSaveToggle = async () => {
+    const wasSaved = isSaved(review.id)
+    const ok = await toggle(review.id)
+    if (!ok) toast.error("Please sign in to save vehicles to your garage.")
+    else toast.success(wasSaved ? "Removed from your garage." : "Saved to your garage.")
   }
 
   return (
@@ -225,10 +251,19 @@ export default function CarDetailsPage() {
                   {review.model} <span className="text-white/60">{review.year}</span>
                 </h1>
               </div>
-              <button onClick={share} className="relative inline-flex items-center gap-2 border border-white/40 text-white px-4 py-2 text-xs font-mono uppercase tracking-widest hover:bg-white hover:text-black transition-colors pointer-events-auto">
-                <FiShare2 size={14} /> Share
-                {shareMsg && <span className="absolute -top-9 right-0 bg-white text-black px-3 py-1 text-[10px] whitespace-nowrap">Link copied</span>}
-              </button>
+              <div className="flex items-center gap-2 pointer-events-auto">
+                <button onClick={handleSaveToggle} disabled={isBusy(review.id)}
+                  aria-label={isSaved(review.id) ? "Remove from garage" : "Save to garage"}
+                  className={`inline-flex items-center gap-2 border px-4 py-2 text-xs font-mono uppercase tracking-widest transition-colors disabled:opacity-60 ${
+                    isSaved(review.id) ? "bg-primary border-primary text-white" : "border-white/40 text-white hover:bg-white hover:text-black"
+                  }`}>
+                  <FiHeart size={14} className={isSaved(review.id) ? "fill-current" : ""} /> {isSaved(review.id) ? "Saved" : "Save"}
+                </button>
+                <button onClick={share} className="relative inline-flex items-center gap-2 border border-white/40 text-white px-4 py-2 text-xs font-mono uppercase tracking-widest hover:bg-white hover:text-black transition-colors">
+                  <FiShare2 size={14} /> Share
+                  {shareMsg && <span className="absolute -top-9 right-0 bg-white text-black px-3 py-1 text-[10px] whitespace-nowrap">Link copied</span>}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -263,9 +298,12 @@ export default function CarDetailsPage() {
             </div>
 
             {/* Body */}
-            {content.body && (
+            {descriptionHtml && (
               <Reveal animation="fade-up">
-                <p className="text-lg leading-relaxed text-muted-foreground">{content.body}</p>
+                <div
+                  className="text-lg leading-relaxed text-muted-foreground prose prose-invert max-w-none [&_p]:mb-4 [&_strong]:font-semibold [&_em]:italic [&_ul]:list-disc [&_ol]:list-decimal [&_ul]:pl-6 [&_ol]:pl-6"
+                  dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+                />
               </Reveal>
             )}
 
@@ -433,6 +471,20 @@ export default function CarDetailsPage() {
                     <input className="w-full border border-white/10 bg-black/40 px-4 py-3 text-sm text-white focus:border-primary outline-none"
                       placeholder="Email *" value={lead.email} onChange={(e) => setLead({ ...lead, email: e.target.value })} />
                   </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className="block">
+                      <span className="block text-[10px] font-mono uppercase tracking-widest text-white/50 mb-1">Preferred date *</span>
+                      <input type="date" min={new Date().toISOString().split("T")[0]}
+                        className="w-full border border-white/10 bg-black/40 px-4 py-3 text-sm text-white focus:border-primary outline-none [color-scheme:dark]"
+                        value={lead.preferred_date} onChange={(e) => setLead({ ...lead, preferred_date: e.target.value })} />
+                    </label>
+                    <label className="block">
+                      <span className="block text-[10px] font-mono uppercase tracking-widest text-white/50 mb-1">Preferred time</span>
+                      <input type="time"
+                        className="w-full border border-white/10 bg-black/40 px-4 py-3 text-sm text-white focus:border-primary outline-none [color-scheme:dark]"
+                        value={lead.preferred_time} onChange={(e) => setLead({ ...lead, preferred_time: e.target.value })} />
+                    </label>
+                  </div>
                   <select className="w-full border border-white/10 bg-black/40 px-4 py-3 text-sm text-white focus:border-primary outline-none"
                     value={lead.preferred_location} onChange={(e) => setLead({ ...lead, preferred_location: e.target.value })}>
                     {DEALER_LOCATIONS.map((d) => <option key={d} value={d} className="bg-zinc-900 text-white">{d}</option>)}
@@ -440,9 +492,9 @@ export default function CarDetailsPage() {
                   <textarea className="w-full border border-white/10 bg-black/40 px-4 py-3 text-sm font-semibold text-white focus:border-primary outline-none h-[100px] resize-none"
                     placeholder="Anything we should know? (optional)" value={lead.message} onChange={(e) => setLead({ ...lead, message: e.target.value })} />
                   {leadErr && <p className="text-red-500 text-xs font-mono">{leadErr}</p>}
-                  <button onClick={submitLead} disabled={createLead.isPending}
+                  <button onClick={submitLead} disabled={booking}
                     className="w-full bg-primary text-white py-4 text-xs font-mono font-black uppercase tracking-[0.2em] hover:bg-white hover:text-black transition-colors disabled:opacity-60">
-                    {createLead.isPending ? "Sending..." : "Request Test Drive"}
+                    {booking ? "Sending..." : "Request Test Drive"}
                   </button>
                 </div>
               )}

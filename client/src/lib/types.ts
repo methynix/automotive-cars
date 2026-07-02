@@ -2,6 +2,7 @@ export type Condition = "new" | "used" | "certified"
 export type ReviewStatus = "draft" | "published"
 export type CommentStatus = "approved" | "pending" | "spam"
 export type LeadStatus = "new" | "contacted" | "qualified" | "closed"
+export type TestDriveStatus = "pending" | "confirmed" | "completed" | "cancelled"
 export type UserRole = "admin" | "operator" | "user"
 
 export interface ReviewSpec {
@@ -134,6 +135,7 @@ export interface BrandInput {
 export interface Lead {
   id: string
   review_id?: string | null
+  profile_id?: string | null
   full_name: string
   email: string
   phone: string
@@ -143,6 +145,61 @@ export interface Lead {
   internal_notes?: string
   created_at: string
   review?: { title: string; slug: string; manufacturer: string; model: string } | null
+}
+
+// ── Customer account hub ──
+
+// A saved-car row joins to a slim review summary for the Virtual Garage grid.
+export interface SavedCar {
+  id: string
+  review_id: string
+  created_at: string
+  review: {
+    id: string
+    slug: string
+    title: string
+    manufacturer: string
+    model: string
+    year: number
+    featured_image?: string | null
+    body_style?: string | null
+    specs?: { price?: number | null; fuel_type?: string | null } | null
+  }
+}
+
+export interface TestDrive {
+  id: string
+  review_id?: string | null
+  full_name: string
+  email: string
+  phone?: string | null
+  preferred_date: string
+  preferred_time?: string | null
+  preferred_location?: string | null
+  message?: string | null
+  status: TestDriveStatus
+  created_at: string
+  review?: { title: string; slug: string; manufacturer: string; model: string; featured_image?: string | null } | null
+}
+
+export interface TestDriveInput {
+  review_id?: string | null
+  full_name: string
+  email: string
+  phone?: string
+  preferred_date: string
+  preferred_time?: string
+  preferred_location?: string
+  message?: string
+}
+
+export interface UserPreference {
+  profile_id?: string
+  body_styles: string[]
+  budget_min?: number | null
+  budget_max?: number | null
+  fuel_types: string[]
+  notify_on_match: boolean
 }
 export interface LeadInput {
   review_id?: string | null

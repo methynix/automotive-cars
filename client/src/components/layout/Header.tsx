@@ -136,8 +136,9 @@ export function Header() {
             <Link to="/signin" onClick={() => setMenuOpen(false)} className="py-3 px-2 text-sm font-mono uppercase tracking-widest text-primary font-bold">ADMIN</Link>
           ) : (
             <>
+              <Link to="/profile" onClick={() => setMenuOpen(false)} className="py-3 px-2 text-sm font-mono uppercase tracking-widest text-primary font-bold border-b border-border/40">Profile</Link>
               {(user?.role === "admin" || user?.role === "operator") && (
-                <Link to="/app" onClick={() => setMenuOpen(false)} className="py-3 px-2 text-sm font-mono uppercase tracking-widest text-primary font-bold border-b border-border/40">Dashboard</Link>
+                <Link to="/admin" onClick={() => setMenuOpen(false)} className="py-3 px-2 text-sm font-mono uppercase tracking-widest text-primary font-bold border-b border-border/40">Dashboard</Link>
               )}
               <button onClick={() => { logout(); setMenuOpen(false); }} className="py-3 px-2 text-sm font-mono uppercase tracking-widest text-destructive font-bold text-left">Logout</button>
             </>
@@ -194,8 +195,11 @@ export function Header() {
                       <p className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest mb-1">Signed in as</p>
                       <p className="font-bold truncate text-sm">{user?.full_name || user?.email}</p>
                     </div>
+                    <Link to="/profile" onClick={() => setDesktopModalOpen(false)} className="flex items-center justify-start w-full p-3 border border-border hover:bg-muted transition-colors">
+                      <span className="text-sm font-mono uppercase tracking-widest">Profile</span>
+                    </Link>
                     {(user?.role === "admin" || user?.role === "operator") && (
-                      <Link to="/app" onClick={() => setDesktopModalOpen(false)} className="flex items-center justify-start w-full p-3 bg-primary text-primary-foreground font-bold hover:bg-primary/90 transition-colors">
+                      <Link to="/admin" onClick={() => setDesktopModalOpen(false)} className="flex items-center justify-start w-full p-3 bg-primary text-primary-foreground font-bold hover:bg-primary/90 transition-colors">
                         <span className="text-sm font-mono uppercase tracking-widest">Dashboard</span>
                       </Link>
                     )}

@@ -3,6 +3,7 @@ import { ReviewController } from '../controllers/review.controller.js';
 import { CommentController } from '../controllers/comment.controller.js';
 import { BrandController } from '../controllers/brand.controller.js';
 import { LeadController } from '../controllers/lead.controller.js';
+import { TestDriveController } from '../controllers/testdrive.controller.js';
 import { UserController } from '../controllers/user.controller.js';
 import { AnalyticsController } from '../controllers/analytics.controller.js';
 import { requireAdmin, requireStaff } from '../middlewares/auth.middleware.js';
@@ -12,6 +13,7 @@ import { createReviewSchema, updateReviewSchema, setPublishSchema } from '../val
 import { moderateCommentSchema } from '../validators/comment.validator.js';
 import { createBrandSchema, updateBrandSchema } from '../validators/brand.validator.js';
 import { updateLeadSchema } from '../validators/lead.validator.js';
+import { updateTestDriveSchema } from '../validators/testdrive.validator.js';
 import { updateUserSchema } from '../validators/user.validator.js';
 
 const router = express.Router();
@@ -51,6 +53,10 @@ router.delete('/api/admin/users/:id', requireAdmin, validateUUID(), UserControll
 router.get('/api/admin/leads', LeadController.adminList);
 router.put('/api/admin/leads/:id', validateUUID(), validate(updateLeadSchema), LeadController.update);
 router.delete('/api/admin/leads/:id', requireAdmin, validateUUID(), LeadController.remove);
+
+// ── Test drives (view/update status — staff) ──
+router.get('/api/admin/test-drives', TestDriveController.adminList);
+router.put('/api/admin/test-drives/:id', validateUUID(), validate(updateTestDriveSchema), TestDriveController.update);
 
 // ── Analytics ──
 router.get('/api/admin/analytics', AnalyticsController.overview);

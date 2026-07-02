@@ -3,7 +3,7 @@ import { Navigate } from "react-router-dom"
 import {
   FiGrid, FiBox, FiUsers, FiTag, FiInbox, FiSettings, FiLogOut, FiCopy,
   FiPlus, FiEdit, FiTrash2, FiUploadCloud, FiEye, FiEyeOff, FiX, FiCheck, FiLoader, FiAlertTriangle, FiMessageSquare,
-  FiBold, FiItalic, FiList, FiMenu,
+  FiBold, FiItalic, FiList, FiMenu, FiCalendar,
 } from "react-icons/fi"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts"
 import { useEditor, EditorContent } from '@tiptap/react'
@@ -20,11 +20,12 @@ import {
   useAdminBrands, useCreateBrand, useUpdateBrand, useDeleteBrand,
   useUsers, useUpdateUser, useDeleteUser,
   useLeads, useUpdateLead, useDeleteLead,
+  useTestDrives, useUpdateTestDrive,
   useAnalytics,
   useSettings, useUpdateSettings
 } from "@/hooks/useApi"
 import { BODY_STYLES, CONDITIONS } from "@/lib/constants"
-import type { Review, ReviewInput, ReviewSpec, GalleryImage, Brand, Lead, Comment as AppComment } from "@/lib/types"
+import type { Review, ReviewInput, ReviewSpec, GalleryImage, Brand, Lead, TestDriveStatus, Comment as AppComment } from "@/lib/types"
 
 // Module-level so inputs keep focus across re-renders (defining this inside a
 // component would remount every field on each keystroke).
@@ -62,7 +63,7 @@ function useConfirm() {
   return { confirm, dialog }
 }
 
-type Tab = "dashboard" | "vehicles" | "brands" | "comments" | "leads" | "users" | "settings"
+type Tab = "dashboard" | "vehicles" | "brands" | "comments" | "leads" | "testdrives" | "users" | "settings"
 
 const emptyForm: ReviewInput = {
   title: "", excerpt: "", featured_image: "", manufacturer: "", model: "",
@@ -72,11 +73,12 @@ const emptyForm: ReviewInput = {
 }
 
 export default function AdminPage() {
-  const { user, isAdmin, isStaff, loading, logout } = useAuth()
+  const { user, isAdmin, isStaff, loading, logout, isAuthenticated } = useAuth()
   const [tab, setTab] = useState<Tab>("dashboard")
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   if (loading) return <div className="min-h-screen flex items-center justify-center font-mono text-sm">Loading…</div>
-  if (!isStaff) return <Navigate to="/signin" replace />
+  if (!isStaff) return <Navigate to={isAuthenticated ? "/profile" : "/signin"} replace />
 
   const nav: { id: Tab; label: string; icon: any; adminOnly?: boolean }[] = [
     { id: "dashboard", label: "Dashboard", icon: FiGrid },
@@ -84,27 +86,52 @@ export default function AdminPage() {
     { id: "brands", label: "Brands", icon: FiTag, adminOnly: true },
     { id: "comments", label: "Comments", icon: FiMessageSquare },
     { id: "leads", label: "Leads", icon: FiInbox },
+    { id: "testdrives", label: "Test Drives", icon: FiCalendar },
     { id: "users", label: "Users", icon: FiUsers, adminOnly: true },
     { id: "settings", label: "Settings", icon: FiSettings },
   ]
 
+  const activeLabel = nav.find((n) => n.id === tab)?.label ?? ""
+  const go = (id: Tab) => { setTab(id); setSidebarOpen(false) }
+
   return (
-    <div className="min-h-screen bg-background font-inter text-foreground flex">
-      {/* Sidebar */}
-      <aside className="w-60 border-r border-border p-6 flex flex-col gap-2 sticky top-0 h-screen">
-        <div className="mb-6">
-          <h1 className="font-archivo font-extrabold uppercase tracking-tighter text-lg">FUTURE <span className="text-primary">AUTO</span></h1>
-          <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Admin Console</p>
+    <div className="min-h-screen bg-background font-inter text-foreground flex flex-col lg:flex-row">
+      {/* Mobile top bar with hamburger (drawer toggle) */}
+      <header className="lg:hidden flex items-center justify-between gap-3 border-b border-border p-4 sticky top-0 z-30 bg-background">
+        <button onClick={() => setSidebarOpen(true)} aria-label="Open menu" className="p-2 border border-border hover:border-primary transition-colors">
+          <FiMenu size={18} />
+        </button>
+        <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground">{activeLabel}</span>
+        <h1 className="font-archivo font-extrabold uppercase tracking-tighter text-base">FUTURE <span className="text-primary">AUTO</span></h1>
+      </header>
+
+      {/* Backdrop (mobile only, when drawer is open) */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-40 bg-black/60 lg:hidden" onClick={() => setSidebarOpen(false)} />
+      )}
+
+      {/* Sidebar — off-canvas drawer on mobile, static column on desktop */}
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-background border-r border-border p-6 flex flex-col gap-2 overflow-y-auto transition-transform duration-300 lg:z-auto lg:w-60 lg:translate-x-0 lg:sticky lg:top-0 lg:h-screen ${
+        sidebarOpen ? "translate-x-0" : "-translate-x-full"
+      }`}>
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="font-archivo font-extrabold uppercase tracking-tighter text-lg">FUTURE <span className="text-primary">AUTO</span></h1>
+            <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Admin Console</p>
+          </div>
+          <button onClick={() => setSidebarOpen(false)} aria-label="Close menu" className="lg:hidden p-1 text-muted-foreground hover:text-foreground">
+            <FiX size={18} />
+          </button>
         </div>
         {nav.filter((n) => !n.adminOnly || isAdmin).map((n) => (
-          <button key={n.id} onClick={() => setTab(n.id)}
-            className={`flex items-center gap-3 px-3 py-2 text-xs font-mono uppercase tracking-widest transition-colors ${
+          <button key={n.id} onClick={() => go(n.id)}
+            className={`flex shrink-0 items-center gap-3 px-3 py-2.5 text-xs font-mono uppercase tracking-widest transition-colors whitespace-nowrap ${
               tab === n.id ? "bg-foreground text-background" : "hover:bg-muted/40"
             }`}>
             <n.icon size={14} /> {n.label}
           </button>
         ))}
-        <div className="mt-auto">
+        <div className="mt-auto flex flex-col gap-2 text-left pt-6">
           <p className="text-[10px] font-mono text-muted-foreground mb-2 truncate">{user?.email}</p>
           <button onClick={logout} className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-primary hover:underline">
             <FiLogOut size={14} /> Sign out
@@ -112,12 +139,13 @@ export default function AdminPage() {
         </div>
       </aside>
 
-      <main className="flex-1 p-8 overflow-x-hidden">
+      <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-x-hidden">
         {tab === "dashboard" && <DashboardTab setTab={setTab} />}
         {tab === "vehicles" && <VehiclesTab />}
         {tab === "brands" && isAdmin && <BrandsTab />}
         {tab === "comments" && <CommentsTab />}
         {tab === "leads" && <LeadsTab />}
+        {tab === "testdrives" && <TestDrivesTab />}
         {tab === "users" && isAdmin && <UsersTab currentUserId={user!.id} />}
         {tab === "settings" && <SettingsTab />}
       </main>
@@ -144,12 +172,12 @@ function DashboardTab({ setTab }: { setTab: (tab: Tab) => void }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
-        <h2 className="text-3xl font-archivo font-extrabold uppercase tracking-tight">Dashboard</h2>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-8">
+        <h2 className="text-2xl sm:text-3xl font-archivo font-extrabold uppercase tracking-tight">Dashboard</h2>
         <select
           value={range}
           onChange={(e) => setRange(e.target.value)}
-          className="bg-background border border-border px-3 py-2 text-xs font-mono uppercase tracking-widest outline-none focus:border-primary"
+          className="w-full sm:w-auto bg-background border border-border px-3 py-2 text-xs font-mono uppercase tracking-widest outline-none focus:border-primary"
         >
           <option value="all">All Time</option>
           <option value="30d">Last 30 Days</option>
@@ -157,7 +185,7 @@ function DashboardTab({ setTab }: { setTab: (tab: Tab) => void }) {
         </select>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-10">
         <Stat label="Published" value={t.published} onClick={() => setTab("vehicles")} />
         <Stat label="Drafts" value={t.drafts} onClick={() => setTab("vehicles")} />
         <Stat label="Total Views" value={t.views.toLocaleString()} />
@@ -266,16 +294,16 @@ function VehiclesTab() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
-        <h2 className="text-3xl font-archivo font-extrabold uppercase tracking-tight">Vehicles</h2>
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-8">
+        <h2 className="text-2xl sm:text-3xl font-archivo font-extrabold uppercase tracking-tight">Vehicles</h2>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <input
-            className="border border-border bg-background px-3 py-2 text-sm focus:border-primary outline-none min-w-[240px]"
+            className="w-full sm:min-w-[240px] border border-border bg-background px-3 py-2 text-sm focus:border-primary outline-none"
             placeholder="Search make, model..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <button onClick={openNew} className="inline-flex items-center gap-2 bg-primary text-white px-4 py-2 text-xs font-mono font-bold uppercase tracking-widest hover:bg-foreground transition-colors">
+          <button onClick={openNew} className="inline-flex items-center justify-center gap-2 bg-primary text-white px-4 py-2 text-xs font-mono font-bold uppercase tracking-widest hover:bg-foreground transition-colors">
             <FiPlus size={14} /> Add Vehicle
           </button>
         </div>
@@ -888,6 +916,77 @@ function LeadsTab() {
         </div>
       )}
       {dialog}
+    </div>
+  )
+}
+
+/* ─────────────── Test Drives ─────────────── */
+function TestDrivesTab() {
+  const [statusFilter, setStatusFilter] = useState("all")
+  const { data, isLoading } = useTestDrives({ limit: 100, ...(statusFilter !== "all" && { status: statusFilter }) })
+  const updateTestDrive = useUpdateTestDrive()
+  const toast = useToast()
+  const rows = data?.data ?? []
+  const statuses = ["pending", "confirmed", "completed", "cancelled"] as const
+
+  const badge: Record<string, string> = {
+    pending: "text-amber-600",
+    confirmed: "text-green-600",
+    completed: "text-blue-600",
+    cancelled: "text-red-600",
+  }
+
+  const fmt = (d: string) => new Date(d).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })
+
+  return (
+    <div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-8">
+        <h2 className="text-2xl sm:text-3xl font-archivo font-extrabold uppercase tracking-tight">Test Drives</h2>
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
+          className="w-full sm:w-auto border border-border bg-background px-3 py-2 text-xs font-mono uppercase tracking-widest outline-none focus:border-primary">
+          <option value="all">All statuses</option>
+          {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+      </div>
+      {isLoading ? <p className="font-mono text-sm">Loading…</p> : (
+        <div className="border border-border overflow-x-auto">
+          <table className="w-full min-w-[820px] text-sm">
+            <thead className="bg-muted/30 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+              <tr>
+                <th className="text-left p-3">Contact</th>
+                <th className="text-left p-3">Vehicle</th>
+                <th className="text-left p-3">Preferred</th>
+                <th className="text-left p-3">Location</th>
+                <th className="text-left p-3">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((t) => (
+                <tr key={t.id} className="border-t border-border align-top">
+                  <td className="p-3">
+                    <div className="font-archivo font-bold">{t.full_name}</div>
+                    <div className="text-[10px] font-mono text-muted-foreground">{t.email}</div>
+                    {t.phone && <div className="text-[10px] font-mono text-muted-foreground">{t.phone}</div>}
+                  </td>
+                  <td className="p-3 text-xs">{t.review ? `${t.review.manufacturer} ${t.review.model}` : "—"}</td>
+                  <td className="p-3 text-xs font-mono whitespace-nowrap">
+                    {fmt(t.preferred_date)}{t.preferred_time ? ` · ${t.preferred_time}` : ""}
+                  </td>
+                  <td className="p-3 text-xs">{t.preferred_location || "—"}</td>
+                  <td className="p-3">
+                    <select value={t.status}
+                      onChange={(e) => updateTestDrive.mutate({ id: t.id, status: e.target.value as TestDriveStatus }, { onSuccess: () => toast.success("Appointment updated.") })}
+                      className={`border border-border bg-background px-2 py-1 text-xs font-mono uppercase font-bold ${badge[t.status] || ""}`}>
+                      {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </td>
+                </tr>
+              ))}
+              {rows.length === 0 && <tr><td colSpan={5} className="p-8 text-center text-muted-foreground font-mono text-xs">No test-drive appointments yet.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }

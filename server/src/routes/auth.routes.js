@@ -120,4 +120,35 @@ router.get('/api/auth/me', async (req, res) => {
   }
 });
 
+router.put('/api/auth/me', async (req, res) => {
+  try {
+    const auth = req.headers.authorization;
+    if (!auth || !auth.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, message: 'Not authenticated' });
+    }
+
+    const token = auth.split(' ')[1];
+    const decoded = jwt.verify(token, getSecret());
+    const { full_name } = req.body || {};
+
+    const updatePayload = {
+      full_name: typeof full_name === 'string' ? full_name.trim() || null : undefined,
+    };
+
+    const profile = await prisma.profile.update({
+      where: { id: decoded.sub },
+      data: updatePayload,
+      select: { id: true, email: true, full_name: true, role: true },
+    });
+
+    return res.json({ success: true, data: profile });
+  } catch (err) {
+    if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
+      return res.status(401).json({ success: false, message: 'Invalid or expired token' });
+    }
+    logger.error({ err }, 'Profile update error');
+    return res.status(500).json({ success: false, message: 'Failed to update profile' });
+  }
+});
+
 export default router;

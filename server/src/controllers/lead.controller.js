@@ -3,7 +3,7 @@ import { success } from '../utils/apiResponse.js';
 
 export const LeadController = {
   async create(req, res, next) {
-    try { return success(res, await LeadService.create(req.body), 201); } catch (err) { next(err); }
+    try { return success(res, await LeadService.create(req.body, req.user?.id || null), 201); } catch (err) { next(err); }
   },
   async adminList(req, res, next) {
     try {

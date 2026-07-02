@@ -11,6 +11,7 @@ import NewsPage from "@/pages/NewsPage"
 import AdminPage from "@/pages/AdminPage"
 import SignInPage from "@/pages/SignInPage"
 import SignUpPage from "@/pages/SignUpPage"
+import ProfilePage from "@/pages/ProfilePage"
 import ContactPage from "@/pages/ContactPage"
 import PrivacyPolicyPage from "@/pages/PrivacyPolicyPage"
 import TermsPage from "@/pages/TermsPage"
@@ -32,6 +33,7 @@ function App() {
               <Route path="/brands" element={<BrandsPage />} />
               <Route path="/signin" element={<SignInPage />} />
               <Route path="/signup" element={<SignUpPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/privacy" element={<PrivacyPolicyPage />} />
               <Route path="/terms" element={<TermsPage />} />

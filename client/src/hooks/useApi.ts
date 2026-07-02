@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import * as api from "@/lib/api"
-import type { ReviewFilters, ReviewInput, CommentInput, BrandInput, LeadInput, Lead } from "@/lib/types"
+import type { ReviewFilters, ReviewInput, CommentInput, BrandInput, LeadInput, Lead, TestDriveStatus } from "@/lib/types"
 
 /* ───────── Public reads ───────── */
 
@@ -181,6 +181,19 @@ export const useDeleteLead = () => {
   return useMutation({
     mutationFn: (id: string) => api.deleteLead(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "leads"] }),
+  })
+}
+
+/* ───────── Admin: test drives ───────── */
+
+export const useTestDrives = (filters: Record<string, unknown> = {}) =>
+  useQuery({ queryKey: ["admin", "test-drives", filters], queryFn: () => api.adminGetTestDrives(filters) })
+
+export const useUpdateTestDrive = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: TestDriveStatus }) => api.updateTestDrive(id, { status }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "test-drives"] }),
   })
 }
 

@@ -1,10 +1,12 @@
 import { useMemo } from "react"
 import { Link, useSearchParams } from "react-router-dom"
-import { FiSliders, FiX } from "react-icons/fi"
+import { FiSliders, FiX, FiHeart } from "react-icons/fi"
 import { Header } from "@/components/layout/Header"
 import { Footer } from "@/components/layout/Footer"
 import { Reveal } from "@/components/ui/Reveal"
 import { useReviews, useBrands } from "@/hooks/useApi"
+import { useSavedCars } from "@/hooks/useSavedCars"
+import { useToast } from "@/lib/toast"
 import { Price } from "@/components/ui/Price"
 import { BODY_STYLES, CONDITIONS, DRIVETRAINS, SORT_OPTIONS, FALLBACK_IMAGE } from "@/lib/constants"
 import type { ReviewFilters } from "@/lib/types"
@@ -50,6 +52,16 @@ export default function CarListingsPage() {
   const totalPages = Math.max(1, Math.ceil(total / LIMIT))
 
   const { data: brands } = useBrands()
+  const { isSaved, toggle, isBusy } = useSavedCars()
+  const toast = useToast()
+
+  const handleSave = async (e: React.MouseEvent, reviewId: string) => {
+    e.preventDefault(); e.stopPropagation()
+    const wasSaved = isSaved(reviewId)
+    const ok = await toggle(reviewId)
+    if (!ok) toast.error("Please sign in to save vehicles to your garage.")
+    else toast.success(wasSaved ? "Removed from your garage." : "Saved to your garage.")
+  }
 
   const activeCount = ["search", "manufacturer", "bodyStyle", "condition", "drivetrain", "minPrice", "maxPrice", "maxMileage"]
     .filter((k) => get(k)).length
@@ -248,10 +260,21 @@ export default function CarListingsPage() {
                             </span>
                           )}
                           {r.body_style && (
-                            <span className="absolute top-3 right-3 bg-black/70 text-white text-[10px] font-mono px-2 py-1 uppercase tracking-widest">
+                            <span className="absolute bottom-3 left-3 bg-black/70 text-white text-[10px] font-mono px-2 py-1 uppercase tracking-widest">
                               {r.body_style}
                             </span>
                           )}
+                          <button
+                            type="button"
+                            onClick={(e) => handleSave(e, r.id)}
+                            disabled={isBusy(r.id)}
+                            aria-label={isSaved(r.id) ? "Remove from garage" : "Save to garage"}
+                            className={`absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-full backdrop-blur-md transition-colors disabled:opacity-60 ${
+                              isSaved(r.id) ? "bg-primary text-white" : "bg-black/50 text-white hover:bg-primary"
+                            }`}
+                          >
+                            <FiHeart size={15} className={isSaved(r.id) ? "fill-current" : ""} />
+                          </button>
                         </div>
                         <div className="p-6">
                           <span className="text-[10px] font-mono font-bold text-primary uppercase tracking-[0.3em]">{r.manufacturer}</span>

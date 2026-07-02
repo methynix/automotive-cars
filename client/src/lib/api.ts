@@ -2,6 +2,7 @@
 import type {
   Review, ReviewInput, ReviewFilters, Comment, CommentInput,
   Brand, BrandInput, Lead, LeadInput, AppUser, Analytics, NewsApiResponse, Paginated,
+  SavedCar, TestDrive, TestDriveInput, UserPreference,
 } from "./types"
 
 const BASE_URL =
@@ -147,6 +148,30 @@ export const createLead = (data: LeadInput) =>
 export const getNews = (page = 1, perPage = 12) =>
   apiFetch<NewsApiResponse>(`/api/news${qs({ page, perPage })}`)
 
+// Test-drive booking is public; the profile is linked server-side when signed in.
+export const bookTestDrive = (data: TestDriveInput) =>
+  apiFetch<TestDrive>(`/api/test-drives`, { method: "POST", auth: true, body: JSON.stringify(data) })
+
+/* ───────────────────────── Customer account hub ───────────────────────── */
+
+export const getSavedCars = () =>
+  apiFetch<SavedCar[]>(`/api/account/saved-cars`, { auth: true })
+export const saveCar = (review_id: string) =>
+  apiFetch<SavedCar>(`/api/account/saved-cars`, { method: "POST", auth: true, body: JSON.stringify({ review_id }) })
+export const unsaveCar = (review_id: string) =>
+  apiFetch<{ review_id: string }>(`/api/account/saved-cars/${review_id}`, { method: "DELETE", auth: true })
+
+export const getMyTestDrives = () =>
+  apiFetch<TestDrive[]>(`/api/account/test-drives`, { auth: true })
+
+export const getMyInquiries = () =>
+  apiFetch<Lead[]>(`/api/account/inquiries`, { auth: true })
+
+export const getPreferences = () =>
+  apiFetch<UserPreference>(`/api/account/preferences`, { auth: true })
+export const updatePreferences = (data: UserPreference) =>
+  apiFetch<UserPreference>(`/api/account/preferences`, { method: "PUT", auth: true, body: JSON.stringify(data) })
+
 /* ───────────────────────── Auth ───────────────────────── */
 
 export const login = (email: string, password: string) =>
@@ -160,6 +185,8 @@ export const register = (email: string, password: string, full_name: string) =>
   })
 
 export const getMe = () => apiFetch<AppUser>(`/api/auth/me`, { auth: true })
+export const updateProfile = (data: { full_name?: string }) =>
+  apiFetch<AppUser>(`/api/auth/me`, { method: "PUT", auth: true, body: JSON.stringify(data) })
 
 /* ───────────────────────── Admin: reviews ───────────────────────── */
 
@@ -217,6 +244,13 @@ export const updateLead = (id: string, data: Partial<Lead>) =>
 export const deleteLead = (id: string) =>
   apiFetch<{ id: string }>(`/api/admin/leads/${id}`, { method: "DELETE", auth: true })
 
+
+/* ───────────────────────── Admin: test drives ───────────────────────── */
+
+export const adminGetTestDrives = (filters: Record<string, unknown> = {}) =>
+  apiFetchPaged<TestDrive>(`/api/admin/test-drives${qs(filters)}`, { auth: true })
+export const updateTestDrive = (id: string, data: { status: TestDrive["status"] }) =>
+  apiFetch<TestDrive>(`/api/admin/test-drives/${id}`, { method: "PUT", auth: true, body: JSON.stringify(data) })
 
 /* ───────────────────────── Admin: analytics + media ───────────────────────── */
 

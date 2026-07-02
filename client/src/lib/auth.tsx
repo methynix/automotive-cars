@@ -9,6 +9,7 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<AppUser>
   register: (email: string, password: string, full_name: string) => Promise<AppUser>
   logout: () => void
+  refreshUser: () => Promise<AppUser | null>
   isAuthenticated: boolean
   isAdmin: boolean
   isStaff: boolean
@@ -27,24 +28,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     api.clearToken()
   }, [])
 
+  const refreshUser = useCallback(async () => {
+    const saved = api.getToken()
+    if (!saved) {
+      setUser(null)
+      setTokenState(null)
+      return null
+    }
+
+    try {
+      const me = await api.getMe()
+      setUser(me)
+      setTokenState(saved)
+      return me
+    } catch (err) {
+      // Only log out if the token is genuinely rejected (401). A network
+      // error or a 5xx (e.g. the DB is momentarily unreachable) must NOT
+      // wipe the session — otherwise a transient blip logs the user out.
+      if (err instanceof api.ApiError && err.status === 401) {
+        logout()
+      } else {
+        setTokenState(saved) // keep the token; user can retry
+      }
+      throw err
+    }
+  }, [logout])
+
   // Validate any stored token on boot.
   useEffect(() => {
-    const saved = api.getToken()
-    if (!saved) { setLoading(false); return }
-    api.getMe()
-      .then((u) => { setUser(u); setTokenState(saved) })
-      .catch((err) => {
-        // Only log out if the token is genuinely rejected (401). A network
-        // error or a 5xx (e.g. the DB is momentarily unreachable) must NOT
-        // wipe the session — otherwise a transient blip logs the user out.
-        if (err instanceof api.ApiError && err.status === 401) {
-          logout()
-        } else {
-          setTokenState(saved) // keep the token; user can retry
-        }
-      })
-      .finally(() => setLoading(false))
-  }, [logout])
+    refreshUser().catch(() => undefined).finally(() => setLoading(false))
+  }, [refreshUser])
 
   // 401 "interceptor": api.ts broadcasts this when a token expires mid-session.
   useEffect(() => {
@@ -68,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider
       value={{
-        user, token, loading, login, register, logout,
+        user, token, loading, login, register, logout, refreshUser,
         isAuthenticated: !!user,
         isAdmin: user?.role === "admin",
         isStaff: user?.role === "admin" || user?.role === "operator",
