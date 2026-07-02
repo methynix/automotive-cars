@@ -4,6 +4,7 @@ import {
   FiArrowLeft, FiShare2, FiCheck, FiX, FiZap, FiSettings,
   FiChevronRight, FiCalendar,
 } from "react-icons/fi"
+import { LuSettings2 } from "react-icons/lu"
 import { Header } from "@/components/layout/Header"
 import { Footer } from "@/components/layout/Footer"
 import { Reveal } from "@/components/ui/Reveal"
@@ -94,7 +95,7 @@ export default function CarDetailsPage() {
   return (
     <div className="min-h-screen bg-background font-inter selection:bg-primary selection:text-white">
       <Header />
-      <main className="pt-20">
+      <main>
         {/* Hero image with live paint overlay */}
         <div className="relative h-[480px] overflow-hidden bg-black">
           <img src={review.featured_image || FALLBACK_IMAGE_LG} alt={review.title}
@@ -105,13 +106,10 @@ export default function CarDetailsPage() {
             style={{ backgroundColor: color.hex, opacity: color.name === "Arctic White" ? 0.05 : 0.28 }} />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
           <div className="absolute bottom-0 left-0 right-0 p-6 md:p-12 max-w-[1280px] mx-auto">
-            <Link to="/cars" className="inline-flex items-center gap-2 text-white/80 hover:text-white text-xs font-mono uppercase tracking-widest mb-4">
-              <FiArrowLeft size={14} /> Back to garage
-            </Link>
             <div className="flex items-end justify-between flex-wrap gap-4">
               <div>
                 <span className="text-[11px] font-mono font-bold text-primary uppercase tracking-[0.3em]">{review.manufacturer}{review.body_style ? ` · ${review.body_style}` : ""}</span>
-                <h1 className="text-4xl md:text-6xl font-archivo font-extrabold uppercase tracking-tighter text-white mt-2">
+                <h1 className="text-3xl md:text-4xl font-archivo font-bold uppercase tracking-normal text-white mt-2">
                   {review.model} <span className="text-white/60">{review.year}</span>
                 </h1>
               </div>
@@ -126,9 +124,14 @@ export default function CarDetailsPage() {
         <div className="px-6 md:px-12 max-w-[1280px] mx-auto py-12 grid lg:grid-cols-3 gap-12">
           {/* Main column */}
           <div className="lg:col-span-2 space-y-12">
+            
+            <Link to="/cars" className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary text-xs font-mono uppercase tracking-widest transition-colors -mb-4">
+              <FiArrowLeft size={14} /> Back to garage
+            </Link>
+
             {/* Score + price + CTA */}
             <div className="flex flex-wrap items-center justify-between gap-6 border-b border-border pb-8">
-              <div className="flex items-center gap-8">
+              <div className="flex items-center gap-8 md:gap-20">
                 {review.rating != null && (
                   <div>
                     <div className="text-5xl font-archivo font-extrabold">{review.rating.toFixed(1)}<span className="text-xl text-muted-foreground">/10</span></div>
@@ -137,10 +140,6 @@ export default function CarDetailsPage() {
                 )}
                 <div>
                   <Price usd={review.specs?.price} size="lg" />
-                  <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground">
-                    {review.condition === "certified" ? "Certified Pre-Owned" : review.condition === "used" ? "Used" : "New"}
-                    {review.specs?.mileage != null ? ` · ${review.specs.mileage.toLocaleString()} km` : ""}
-                  </div>
                 </div>
               </div>
               <button onClick={() => { setShowLead(true); setLeadDone(false) }}
@@ -197,7 +196,7 @@ export default function CarDetailsPage() {
           <aside className="space-y-8">
             {/* Specs */}
             <div className="border border-border p-6">
-              <div className="flex items-center gap-2 mb-5"><FiZap className="text-primary" size={16} /><h3 className="text-xs font-mono uppercase tracking-[0.3em]">Specifications</h3></div>
+              <div className="flex items-center gap-2 mb-5"><LuSettings2 className="text-primary" size={16} /><h3 className="text-xs font-mono uppercase tracking-[0.3em]">Specifications</h3></div>
               <dl className="space-y-3 text-sm">
                 {([
                   ["Engine", review.specs?.engine],
@@ -283,43 +282,57 @@ export default function CarDetailsPage() {
 
       {/* Test-drive lead modal */}
       {showLead && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-6" onClick={() => setShowLead(false)}>
-          <div className="bg-background border border-border w-full max-w-lg p-8" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-archivo font-extrabold uppercase tracking-tight">Book a Test Drive</h3>
-              <button onClick={() => setShowLead(false)}><FiX size={20} /></button>
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-6 backdrop-blur-sm" onClick={() => setShowLead(false)}>
+          <div className="relative overflow-hidden bg-zinc-900 border border-white/10 w-full max-w-lg p-8 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            
+            {/* Background Image Reveal with Special Effect */}
+            <div className="absolute top-0 left-0 w-full h-[65%] lg:h-full lg:w-[65%] z-0 pointer-events-none">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-zinc-900/80 to-zinc-900 z-10" />
+              <div className="absolute inset-0 bg-gradient-to-b from-zinc-900 via-transparent to-zinc-900 z-10" />
+              <img 
+                src={review.featured_image || "/detail-one.jpg"}
+                alt="Modal Background" 
+                className="w-full h-full object-cover opacity-40 grayscale mix-blend-lighten" 
+              />
             </div>
 
-            {leadDone ? (
-              <div className="text-center py-8">
-                <div className="w-14 h-14 rounded-full bg-green-500/10 text-green-600 flex items-center justify-center mx-auto mb-4"><FiCheck size={24} /></div>
-                <p className="font-archivo font-bold uppercase mb-1">Request received</p>
-                <p className="text-sm text-muted-foreground">A specialist will contact you to arrange your drive of the {review.manufacturer} {review.model}.</p>
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-archivo font-extrabold uppercase tracking-tight text-white">Book a Test Drive</h3>
+                <button className="text-white/60 hover:text-white transition-colors" onClick={() => setShowLead(false)}><FiX size={20} /></button>
               </div>
-            ) : (
-              <div className="space-y-4">
-                <p className="text-xs font-mono text-muted-foreground uppercase">{review.manufacturer} {review.model} · {review.year}</p>
-                <input className="w-full border border-border bg-background px-4 py-3 text-sm focus:border-primary outline-none"
-                  placeholder="Full name *" value={lead.full_name} onChange={(e) => setLead({ ...lead, full_name: e.target.value })} />
-                <div className="grid grid-cols-2 gap-3">
-                  <input className="w-full border border-border bg-background px-4 py-3 text-sm focus:border-primary outline-none"
-                    placeholder="Phone *" value={lead.phone} onChange={(e) => setLead({ ...lead, phone: e.target.value })} />
-                  <input className="w-full border border-border bg-background px-4 py-3 text-sm focus:border-primary outline-none"
-                    placeholder="Email *" value={lead.email} onChange={(e) => setLead({ ...lead, email: e.target.value })} />
+
+              {leadDone ? (
+                <div className="text-center py-8">
+                  <div className="w-14 h-14 rounded-full bg-green-500/10 text-green-500 flex items-center justify-center mx-auto mb-4"><FiCheck size={24} /></div>
+                  <p className="font-archivo font-bold uppercase text-white mb-1">Request received</p>
+                  <p className="text-sm text-white/60">A specialist will contact you to arrange your drive of the {review.manufacturer} {review.model}.</p>
                 </div>
-                <select className="w-full border border-border bg-background px-4 py-3 text-sm focus:border-primary outline-none"
-                  value={lead.preferred_location} onChange={(e) => setLead({ ...lead, preferred_location: e.target.value })}>
-                  {DEALER_LOCATIONS.map((d) => <option key={d} value={d}>{d}</option>)}
-                </select>
-                <textarea className="w-full border border-border bg-background px-4 py-3 text-sm focus:border-primary outline-none min-h-[80px]"
-                  placeholder="Anything we should know? (optional)" value={lead.message} onChange={(e) => setLead({ ...lead, message: e.target.value })} />
-                {leadErr && <p className="text-red-500 text-xs font-mono">{leadErr}</p>}
-                <button onClick={submitLead} disabled={createLead.isPending}
-                  className="w-full bg-primary text-white py-4 text-xs font-mono font-black uppercase tracking-[0.2em] hover:bg-foreground transition-colors disabled:opacity-60">
-                  {createLead.isPending ? "Sending..." : "Request Test Drive"}
-                </button>
-              </div>
-            )}
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-xs font-mono font-bold text-primary uppercase">{review.manufacturer} {review.model} · {review.year}</p>
+                  <input className="w-full border border-white/10 bg-black/40 px-4 py-3 text-sm text-white focus:border-primary outline-none"
+                    placeholder="Full name *" value={lead.full_name} onChange={(e) => setLead({ ...lead, full_name: e.target.value })} />
+                  <div className="grid grid-cols-2 gap-3">
+                    <input className="w-full border border-white/10 bg-black/40 px-4 py-3 text-sm text-white focus:border-primary outline-none"
+                      placeholder="Phone *" value={lead.phone} onChange={(e) => setLead({ ...lead, phone: e.target.value })} />
+                    <input className="w-full border border-white/10 bg-black/40 px-4 py-3 text-sm text-white focus:border-primary outline-none"
+                      placeholder="Email *" value={lead.email} onChange={(e) => setLead({ ...lead, email: e.target.value })} />
+                  </div>
+                  <select className="w-full border border-white/10 bg-black/40 px-4 py-3 text-sm text-white focus:border-primary outline-none"
+                    value={lead.preferred_location} onChange={(e) => setLead({ ...lead, preferred_location: e.target.value })}>
+                    {DEALER_LOCATIONS.map((d) => <option key={d} value={d} className="bg-zinc-900 text-white">{d}</option>)}
+                  </select>
+                  <textarea className="w-full border border-white/10 bg-black/40 px-4 py-3 text-sm font-semibold text-white focus:border-primary outline-none h-[100px] resize-none"
+                    placeholder="Anything we should know? (optional)" value={lead.message} onChange={(e) => setLead({ ...lead, message: e.target.value })} />
+                  {leadErr && <p className="text-red-500 text-xs font-mono">{leadErr}</p>}
+                  <button onClick={submitLead} disabled={createLead.isPending}
+                    className="w-full bg-primary text-white py-4 text-xs font-mono font-black uppercase tracking-[0.2em] hover:bg-white hover:text-black transition-colors disabled:opacity-60">
+                    {createLead.isPending ? "Sending..." : "Request Test Drive"}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -22,7 +22,7 @@ export function Hero({ reviews }: HeroProps) {
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
       <div className="relative z-10 w-full px-5 md:px-12 max-w-[1300px] mx-auto pb-8">
         <div className="max-w-2xl mb-10">
-          <h1 className="text-5xl md:text-[4rem] font-archivo font-extrabold text-white mb-6 leading-[0.9] tracking-normal uppercase">
+          <h1 className="text-5xl md:text-[4rem] font-archivo font-extrabold text-white mb-6 leading-[0.9] tracking-normal uppercase [text-shadow:_0_10px_24px_rgba(39,39,42,0.7)]">
             FUTURE <br /> <span className="text-[#C91F20]">AUTOMOTIVE</span>
           </h1>
           <p className="text-lg md:text-xl text-white/80 max-w-lg mb-8 font-inter">
