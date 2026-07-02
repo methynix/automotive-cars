@@ -147,7 +147,7 @@ model Lead {
   review_id          String?    @db.Uuid
   full_name          String
   email              String
-  phone              String
+  phone              String?
   message            String?
   preferred_location String?
   status             LeadStatus @default(new)

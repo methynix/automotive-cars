@@ -1,19 +1,16 @@
 import { Link } from "react-router-dom"
-import { FiArrowRight, FiClock } from "react-icons/fi"
+import { FiArrowRight } from "react-icons/fi"
+import { IoStar } from "react-icons/io5"
 import type { Review } from "@/lib/types"
 import { FALLBACK_IMAGE } from "@/lib/constants"
+import { Button } from "@/components/ui/Button"
 
 interface EditorialGridProps {
   reviews: Review[]
+  isLoading?: boolean
 }
 
-// Estimate read time from the review body so we don't repeat the manufacturer twice.
-function readTime(r: Review): number {
-  const words = String(r.content?.body || "").trim().split(/\s+/).filter(Boolean).length
-  return Math.max(2, Math.round(words / 200))
-}
-
-export function EditorialGrid({ reviews }: EditorialGridProps) {
+export function EditorialGrid({ reviews, isLoading = false }: EditorialGridProps) {
   // Don't assume the parent sorted — sort by publish date ourselves.
   const editorials = [...reviews]
     .sort((a, b) => new Date(b.published_at || b.created_at || 0).getTime() - new Date(a.published_at || a.created_at || 0).getTime())
@@ -22,16 +19,39 @@ export function EditorialGrid({ reviews }: EditorialGridProps) {
   return (
     <section className="py-24 bg-background border-y border-border">
       <div className="px-6 md:px-12 max-w-[1280px] mx-auto">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6">
           <div>
-            <span className="text-sm font-mono text-primary block mb-2 uppercase tracking-widest">Deep Dives</span>
-            <h2 className="text-4xl md:text-5xl font-archivo font-extrabold uppercase">LATEST <span className="text-primary tracking-normal">EDITORIALS</span></h2>
+            <span className="text-[11px] font-mono font-bold text-primary uppercase tracking-[0.3em] block mb-4">Deep Dives</span>
+            <h2 className="text-2xl md:text-4xl font-archivo font-extrabold uppercase tracking-tighter leading-none">
+              LATEST <span className="text-primary tracking-normal">EDITORIALS</span>
+            </h2>
+            <p className="text-sm font-mono text-slate-500 mt-4 uppercase tracking-normal max-w-xl">
+              In-depth analysis and expert reviews of the newest arrivals to our fleet
+            </p>
           </div>
-          <Link className="text-sm font-mono text-foreground border-b-2 border-primary pb-1 group flex items-center gap-2 uppercase tracking-widest font-bold" to="/cars">
-            VIEW ALL REVIEWS <FiArrowRight className="group-hover:translate-x-1 transition-transform" />
+          <Link to="/cars">
+            <Button className="px-[30px] py-5 text-[11px] font-mono font-black uppercase tracking-normal group flex items-center">
+              View All Reviews
+            </Button>
           </Link>
         </div>
-        {editorials.length === 0 ? (
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {Array.from({ length: 4 }).map((_, idx) => (
+              <div key={`skeleton-${idx}`} className="flex flex-col animate-pulse">
+                <div className="aspect-[4/3] bg-muted mb-6 rounded-sm" />
+                <div className="h-3 w-1/3 bg-muted rounded mb-4" />
+                <div className="h-6 w-full bg-muted rounded mb-2" />
+                <div className="h-6 w-4/5 bg-muted rounded mb-6" />
+                <div className="mt-auto flex items-center gap-4 pt-6 border-t border-border">
+                  <div className="h-2 w-20 bg-muted rounded" />
+                  <span className="w-1 h-1 bg-border rounded-full" />
+                  <div className="h-2 w-12 bg-muted rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : editorials.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground"><p className="text-sm font-mono uppercase tracking-widest">No editorials published yet</p></div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -43,12 +63,17 @@ export function EditorialGrid({ reviews }: EditorialGridProps) {
                     onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE }} />
                 </div>
                 <span className="text-xs font-mono text-muted-foreground mb-2 uppercase tracking-widest">{article.manufacturer} {article.model}</span>
-                <h3 className="text-2xl font-archivo font-bold leading-tight mb-6 group-hover:text-primary transition-colors uppercase">{article.title}</h3>
+                <h3 className="text-lg md:text-xl font-archivo font-bold leading-tight mb-6 group-hover:text-primary transition-colors uppercase line-clamp-3">{article.title}</h3>
                 <div className="mt-auto flex items-center gap-4 pt-6 border-t border-border text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
-                  <span className="flex items-center gap-1.5"><FiClock size={12} /> {readTime(article)} min read</span>
-                  <span className="w-1 h-1 bg-border rounded-full" />
-                  <span>{article.year}</span>
-                  {article.rating != null && <><span className="w-1 h-1 bg-border rounded-full" /><span className="text-foreground font-bold">{article.rating.toFixed(1)}/10</span></>}
+                  <span>{new Date(article.updated_at || article.published_at || article.created_at || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                  {article.rating != null && (
+                    <>
+                      <span className="w-1 h-1 bg-border rounded-full" />
+                      <span className="flex items-center gap-1.5 text-foreground font-bold">
+                        <IoStar size={12} className="text-[#FFDF00]" /> {article.rating.toFixed(1)}/10
+                      </span>
+                    </>
+                  )}
                 </div>
               </Link>
             ))}

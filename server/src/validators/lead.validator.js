@@ -4,7 +4,7 @@ export const createLeadSchema = z.object({
   review_id: z.string().uuid().optional().nullable(),
   full_name: z.string().min(1, 'Name is required').max(120),
   email: z.string().email('A valid email is required'),
-  phone: z.string().min(6, 'A valid phone number is required').max(40),
+  phone: z.string().max(40).optional().nullable(),
   message: z.string().max(2000).optional().nullable(),
   preferred_location: z.string().max(160).optional().nullable(),
 });

@@ -838,14 +838,14 @@ function LeadsTab() {
         <div className="border border-border overflow-x-auto">
           <table className="w-full min-w-[760px] text-sm">
             <thead className="bg-muted/30 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-              <tr><th className="text-left p-3">Contact</th><th className="text-left p-3">Vehicle</th><th className="text-left p-3">Location</th><th className="text-left p-3">Status</th><th className="p-3" /></tr>
+              <tr><th className="text-left p-3">Contact</th><th className="text-left p-3">Phone Number</th><th className="text-left p-3">Location</th><th className="text-left p-3">Status</th><th className="p-3" /></tr>
             </thead>
             <tbody>
               {rows.map((l) => (
                 <Fragment key={l.id}>
                   <tr className={`border-t border-border ${expanded === l.id ? "bg-muted/10" : ""}`}>
-                    <td className="p-3"><div className="font-archivo font-bold">{l.full_name}</div><div className="text-[10px] font-mono text-muted-foreground">{l.email} · {l.phone}</div></td>
-                    <td className="p-3 text-xs font-mono">{l.review ? `${l.review.manufacturer} ${l.review.model}` : "—"}</td>
+                    <td className="p-3"><div className="font-archivo font-bold">{l.full_name}</div><div className="text-[10px] font-mono text-muted-foreground">{l.email}</div></td>
+                    <td className="p-3 text-xs font-mono">{l.phone || "—"}</td>
                     <td className="p-3 text-xs">{l.preferred_location || "—"}</td>
                     <td className="p-3">
                       <select value={l.status} onChange={(e) => updateLead.mutate({ id: l.id, data: { status: e.target.value as any } }, { onSuccess: () => toast.success("Lead status updated.") })}

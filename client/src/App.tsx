@@ -14,6 +14,7 @@ import SignUpPage from "@/pages/SignUpPage"
 import ContactPage from "@/pages/ContactPage"
 import PrivacyPolicyPage from "@/pages/PrivacyPolicyPage"
 import TermsPage from "@/pages/TermsPage"
+import { FloatingContact } from "@/components/layout/FloatingContact"
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
               <Route path="/privacy" element={<PrivacyPolicyPage />} />
               <Route path="/terms" element={<TermsPage />} />
             </Routes>
+            <FloatingContact />
           </AuthProvider>
         </CurrencyProvider>
       </ToastProvider>

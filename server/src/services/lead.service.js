@@ -6,6 +6,13 @@ export const LeadService = {
       const review = await prisma.review.findFirst({ where: { id: payload.review_id, deleted_at: null } });
       if (!review) throw Object.assign(new Error('Vehicle not found'), { status: 404 });
     }
+    
+    // Check if email already exists in leads
+    const existing = await prisma.lead.findFirst({ where: { email: payload.email } });
+    if (existing) {
+      throw Object.assign(new Error('You are already subscribed'), { status: 409 });
+    }
+
     return prisma.lead.create({ data: payload });
   },
   async adminGetAll({ page = 1, limit = 20, status } = {}) {

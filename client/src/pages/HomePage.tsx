@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { Link } from "react-router-dom"
 import { Header } from "@/components/layout/Header"
 import { Footer } from "@/components/layout/Footer"
@@ -8,22 +8,100 @@ import { BrandMarquee } from "@/components/sections/BrandMarquee"
 import { FeatureCards } from "@/components/sections/FeatureCards"
 import { EditorialGrid } from "@/components/sections/EditorialGrid"
 import { Button } from "@/components/ui/Button"
-import { getFeaturedReviews } from "@/lib/api"
+import { getFeaturedReviews, createLead } from "@/lib/api"
 import type { Review } from "@/lib/types"
 import { CATEGORY_IMAGES, FALLBACK_IMAGE } from "@/lib/constants"
 import { FiArrowRight, FiStar, FiZap } from "react-icons/fi"
 import { IoStar } from "react-icons/io5"
 import { Reveal } from "@/components/ui/Reveal"
+import { motion, useScroll, useTransform } from "framer-motion"
+
+function MobileSegmentReel({ categories }: { categories: any[] }) {
+  const targetRef = useRef<HTMLDivElement>(null)
+  const { scrollYProgress } = useScroll({ target: targetRef })
+  const x = useTransform(scrollYProgress, [0, 1], ["0%", "-75%"])
+
+  return (
+    <div ref={targetRef} className="relative h-[400vh] md:hidden bg-background">
+      <div className="sticky top-[64px] flex flex-col h-[calc(100svh-64px)] overflow-hidden">
+        
+        <div className="px-6 py-6 shrink-0">
+          <span className="text-[11px] font-mono font-bold text-primary uppercase tracking-[0.3em] block mb-3">Browse by</span>
+          <h2 className="text-2xl font-archivo font-extrabold uppercase tracking-tighter leading-none">
+            VEHICLE <span className="text-primary tracking-normal">SEGMENT</span>
+          </h2>
+          <p className="text-sm font-mono text-slate-500 mt-3 uppercase tracking-normal">
+            Discover the perfect fit — browse our extensive catalog by body style and technology
+          </p>
+        </div>
+
+        <div className="relative flex-1 overflow-hidden w-full">
+          <motion.div style={{ x }} className="absolute top-0 left-0 h-full w-[400vw] flex pb-6">
+            {categories.map((cat, idx) => {
+              const heading = cat.name === 'SUV' ? 'Family & Off-Road' :
+                              cat.name === 'Sedan' ? 'Executive Touring' :
+                              cat.name === 'Sports' ? 'Pure Performance' :
+                              cat.name === 'Electric' ? 'Future Efficiency' : 'Explore Range';
+              
+              // Dynamic padding to perfectly align outer edges with the px-6 heading, but keep gaps small (16px)
+              const paddingClass = idx === 0 ? "pl-6 pr-2" : idx === categories.length - 1 ? "pl-2 pr-6" : "px-2";
+
+              return (
+                <div key={cat.name} className={`w-[100vw] h-full flex-shrink-0 ${paddingClass}`}>
+                  <Link
+                    to="/cars"
+                    className="group relative h-full w-full overflow-hidden border border-border bg-foreground block rounded-none"
+                  >
+                    <img className="w-full h-full object-cover" src={cat.image} alt={cat.name} />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-5 pb-6">
+                      <span className="text-[10px] font-mono font-black uppercase tracking-widest text-white bg-primary px-2.5 py-1 inline-block mb-3">{cat.name}</span>
+                      <span className="block text-3xl font-archivo font-black uppercase text-white mb-2 leading-tight">{heading}</span>
+                      <span className="inline-flex items-center gap-2 text-[10px] font-mono font-bold text-white/70 uppercase tracking-widest mt-2">
+                        View Vehicles <FiArrowRight size={12} />
+                      </span>
+                    </div>
+                  </Link>
+                </div>
+              );
+            })}
+          </motion.div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function HomePage() {
   const [reviews, setReviews] = useState<Review[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
+  const [newsletterName, setNewsletterName] = useState("")
   const [newsletterEmail, setNewsletterEmail] = useState("")
+  const [newsletterPhoneCode, setNewsletterPhoneCode] = useState("+255")
+  const [newsletterPhone, setNewsletterPhone] = useState("")
+  const [newsletterError, setNewsletterError] = useState("")
   const [newsletterDone, setNewsletterDone] = useState(false)
+  const [isSubscribing, setIsSubscribing] = useState(false)
   const fmtPrice = usePriceFormatter()
+  const carousel = useRef<HTMLDivElement>(null)
+  const [carouselWidth, setCarouselWidth] = useState(0)
 
   useEffect(() => {
-    getFeaturedReviews(1, 20)
+    if (carousel.current) {
+      setCarouselWidth(carousel.current.scrollWidth - carousel.current.offsetWidth)
+    }
+    const handleResize = () => {
+      if (carousel.current) {
+        setCarouselWidth(carousel.current.scrollWidth - carousel.current.offsetWidth)
+      }
+    }
+    window.addEventListener("resize", handleResize)
+    return () => window.removeEventListener("resize", handleResize)
+  }, [])
+
+  useEffect(() => {
+    getFeaturedReviews(1, 10)
       .then((res) => {
         if (res?.data) {
           setReviews(res.data)
@@ -32,6 +110,7 @@ export default function HomePage() {
       .catch((err) => {
         console.error("API Error in HomePage:", err)
       })
+      .finally(() => setIsLoading(false))
   }, [])
 
   const filteredReviews = useMemo(() => {
@@ -55,8 +134,40 @@ export default function HomePage() {
     return brands.size
   }, [reviews])
 
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setNewsletterError("")
+    
+    if (!newsletterName.trim()) {
+      setNewsletterError("Username is required")
+      return
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(newsletterEmail)) {
+      setNewsletterError("Please enter a valid email address")
+      return
+    }
+
+    setIsSubscribing(true)
+    try {
+      const phoneStr = newsletterPhone.trim() ? `${newsletterPhoneCode}${newsletterPhone.trim()}` : ""
+      await createLead({
+        full_name: newsletterName.trim(),
+        email: newsletterEmail.trim(),
+        phone: phoneStr,
+        message: "Newsletter Subscription"
+      })
+      setNewsletterDone(true)
+    } catch (err: any) {
+      setNewsletterError(err.message || "Failed to subscribe. Please try again.")
+    } finally {
+      setIsSubscribing(false)
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-background font-inter selection:bg-primary selection:text-white">
+    <div className="min-h-screen flex flex-col font-archivo selection:bg-primary/30 selection:text-white">
       
       <Header />
       
@@ -117,7 +228,7 @@ export default function HomePage() {
             </div>
 
             {/* EXPLORE THE FLEET — redesigned */}
-            <section className="py-16 md:py-20">
+            <section className="py-16 md:py-20 border-b border-border">
               <div className="px-6 md:px-12 max-w-[1280px] mx-auto">
                 <Reveal animation="fade-right">
                   <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6">
@@ -131,9 +242,8 @@ export default function HomePage() {
                       </p>
                     </div>
                     <Link to="/cars">
-                      <Button className="px-8 py-5 text-[11px] font-mono font-black uppercase tracking-normal group">
+                      <Button className="px-[30px] py-5 text-[11px] font-mono font-black uppercase tracking-normal group flex items-center">
                         View All Vehicles
-                        <FiArrowRight className="ml-3 group-hover:translate-x-1 transition-transform" />
                       </Button>
                     </Link>
                   </div>
@@ -183,7 +293,7 @@ export default function HomePage() {
 
                 {/* Grid cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-x-[22px] mt-6">
-                  {Array.from({ length: 8 }).map((_, idx) => {
+                  {Array.from({ length: Math.max(8, Math.min(9, reviews.length - 1)) }).map((_, idx) => {
                     const r = reviews[idx + 1];
                     if (!r) {
                       return (
@@ -202,29 +312,73 @@ export default function HomePage() {
                       <Reveal key={r.id} animation="fade-up" delay={100 + idx * 50}>
                         <Link
                           to={`/cars/${r.slug}`}
-                          className="group bg-background border border-border rounded-lg shadow-md p-4 md:p-6 hover:bg-muted/40 transition-all duration-300 flex flex-col h-full overflow-hidden"
+                          className="group bg-background border border-border rounded-lg shadow-md hover:bg-muted/40 transition-all duration-300 flex flex-col h-full overflow-hidden"
                         >
-                          <div className="aspect-[4/3] overflow-hidden mb-6 relative">
+                          <div className="aspect-[4/3] overflow-hidden relative">
                             <img
                               src={r.featured_image || FALLBACK_IMAGE}
                               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                               alt={r.title}
                             />
-                            <div className="absolute top-3 left-3 bg-foreground/80 text-white text-[9px] font-mono font-bold px-2 py-1 uppercase tracking-widest">
-                              {r.manufacturer}
+                          </div>
+                          <div className="flex flex-col flex-1 p-4 md:p-6">
+                            <span className="text-[11px] font-mono font-bold text-primary uppercase tracking-widest mb-1.5">{r.manufacturer}</span>
+                            <h3 className="text-xl font-archivo font-black uppercase tracking-tight mb-3 group-hover:text-primary transition-colors leading-tight">
+                              {r.model}
+                            </h3>
+                            <p className="text-[13px] text-slate-600 leading-relaxed mb-5 line-clamp-2 flex-1">{r.excerpt}</p>
+                            <div className="flex items-center justify-between text-[11px] font-mono text-slate-700 font-bold border-t border-slate-200 pt-4 mt-auto">
+                              <span className="flex items-center gap-1">
+                                {r.specs?.horsepower ?? "—"} HP
+                              </span>
+                              <span className="flex items-center gap-1">
+                                Rating <IoStar size={12} className="text-[#FFDF00]" /> {r.rating ?? "—"}
+                              </span>
                             </div>
                           </div>
-                          <span className="text-[11px] font-mono font-bold text-primary uppercase tracking-widest mb-1.5">{r.manufacturer}</span>
-                          <h3 className="text-xl font-archivo font-black uppercase tracking-tight mb-3 group-hover:text-primary transition-colors leading-tight">
-                            {r.model}
-                          </h3>
-                          <p className="text-[13px] text-slate-600 leading-relaxed mb-5 line-clamp-2 flex-1">{r.excerpt}</p>
-                          <div className="flex items-center justify-between text-[11px] font-mono text-slate-700 font-bold border-t border-slate-200 pt-4 mt-auto">
-                            <span className="flex items-center gap-1">
-                              {r.specs?.horsepower ?? "—"} HP
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <IoStar size={12} className="text-[#FFDF00]" /> {r.rating ?? "—"}
+                        </Link>
+                      </Reveal>
+                    );
+                  })}
+                </div>
+              </div>
+            </section>
+
+            {/* CATEGORIES — Desktop */}
+            <section className="hidden md:block py-20">
+              <div className="px-12 max-w-[1280px] mx-auto">
+                <Reveal animation="fade-right">
+                  <div className="flex items-end justify-between mb-10 gap-6">
+                    <div>
+                      <span className="text-[11px] font-mono font-bold text-primary uppercase tracking-[0.3em] block mb-4">Browse by</span>
+                      <h2 className="text-4xl font-archivo font-extrabold uppercase tracking-tighter leading-none">
+                        VEHICLE <span className="text-primary tracking-normal">SEGMENT</span>
+                      </h2>
+                      <p className="text-sm font-mono text-slate-500 mt-4 uppercase tracking-normal max-w-xl">
+                        Discover the perfect fit — browse our extensive catalog by body style and technology
+                      </p>
+                    </div>
+                  </div>
+                </Reveal>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                  {categories.map((cat, idx) => {
+                    const heading = cat.name === 'SUV' ? 'Family & Off-Road' :
+                                    cat.name === 'Sedan' ? 'Executive Touring' :
+                                    cat.name === 'Sports' ? 'Pure Performance' :
+                                    cat.name === 'Electric' ? 'Future Efficiency' : 'Explore Range';
+                    return (
+                      <Reveal key={cat.name} animation="zoom-in" delay={idx * 100}>
+                        <Link
+                          to="/cars"
+                          className="group relative h-96 overflow-hidden border border-border bg-foreground block rounded-lg"
+                        >
+                          <img className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" src={cat.image} alt={cat.name} />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                          <div className="absolute bottom-0 left-0 right-0 p-4 pb-6">
+                            <span className="text-[10px] font-mono font-black uppercase tracking-widest text-white bg-primary px-2.5 py-1 inline-block mb-3 rounded-sm">{cat.name}</span>
+                            <span className="block text-2xl font-archivo font-black uppercase text-white mb-2 leading-tight">{heading}</span>
+                            <span className="inline-flex items-center gap-2 text-[10px] font-mono font-bold text-white/70 uppercase tracking-widest group-hover:text-primary transition-colors mt-2">
+                              View Vehicles <FiArrowRight size={12} />
                             </span>
                           </div>
                         </Link>
@@ -235,43 +389,12 @@ export default function HomePage() {
               </div>
             </section>
 
-            {/* CATEGORIES — polished */}
-            <section className="py-16 md:py-20">
-              <div className="px-6 md:px-12 max-w-[1280px] mx-auto">
-                <Reveal animation="fade-left">
-                  <div className="mb-10 text-center md:text-left">
-                    <span className="text-[11px] font-mono font-bold text-primary uppercase tracking-[0.3em] block mb-4">Browse by</span>
-                    <h2 className="text-4xl md:text-5xl font-archivo font-extrabold uppercase tracking-tighter">
-                      Vehicle <span className="text-primary tracking-normal">Segment</span>
-                    </h2>
-                  </div>
-                </Reveal>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {categories.map((cat, idx) => (
-                    <Reveal key={cat.name} animation="zoom-in" delay={idx * 100}>
-                      <Link
-                        to="/cars"
-                        className="group relative h-96 overflow-hidden border border-border bg-foreground block"
-                      >
-                        <img className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" src={cat.image} alt={cat.name} />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                        <div className="absolute bottom-0 left-0 right-0 p-8">
-                          <span className="text-[10px] font-mono font-black uppercase tracking-[0.3em] text-primary block mb-2">{cat.name}</span>
-                          <span className="block text-3xl font-archivo font-black uppercase text-white mb-3">Explore Range</span>
-                          <span className="inline-flex items-center gap-2 text-[10px] font-mono font-bold text-white/60 uppercase tracking-widest group-hover:text-primary transition-colors">
-                            View Vehicles <FiArrowRight size={12} />
-                          </span>
-                        </div>
-                      </Link>
-                    </Reveal>
-                  ))}
-                </div>
-              </div>
-            </section>
+            {/* CATEGORIES — Mobile Sticky Reel */}
+            <MobileSegmentReel categories={categories} />
           </>
         )}
 
-        <EditorialGrid reviews={reviews} />
+        <EditorialGrid reviews={reviews} isLoading={isLoading} />
 
         {/* NEWSLETTER — redesigned */}
         <section id="newsletter" className="py-20 bg-zinc-950 relative overflow-hidden">
@@ -281,26 +404,26 @@ export default function HomePage() {
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-16 items-center">
               <div className="lg:col-span-3">
                 <Reveal animation="fade-right">
-                  <span className="text-[10px] font-mono font-bold text-primary uppercase tracking-[0.3em] block mb-4">Newsletter</span>
-                  <h2 className="text-4xl md:text-5xl font-archivo font-extrabold uppercase tracking-tighter leading-none text-white">
+                  <span className="text-[11px] font-mono font-bold text-primary uppercase tracking-[0.3em] block mb-4">Newsletter</span>
+                  <h2 className="text-2xl md:text-4xl font-archivo font-extrabold uppercase tracking-tighter leading-none text-white">
                     Stay in <span className="text-primary tracking-normal">the Know</span>
                   </h2>
                   <div className="mt-8 space-y-4">
                     <div className="flex items-start gap-4">
                       <div className="w-1 h-8 bg-primary mt-1 shrink-0" />
-                      <p className="text-sm font-mono text-white/60 uppercase tracking-wider leading-relaxed">
+                      <p className="text-sm font-mono text-white/60 tracking-wider leading-relaxed">
                         Weekly deep-dive technical reports delivered to your inbox every Monday
                       </p>
                     </div>
                     <div className="flex items-start gap-4">
                       <div className="w-1 h-8 bg-primary mt-1 shrink-0" />
-                      <p className="text-sm font-mono text-white/60 uppercase tracking-wider leading-relaxed">
-                        First access to new reviews, industry analysis, and exclusive editorial content
+                      <p className="text-sm font-mono text-white/60 tracking-wider leading-relaxed">
+                        Exclusive access to new reviews and industry analysis
                       </p>
                     </div>
                     <div className="flex items-start gap-4">
                       <div className="w-1 h-8 bg-primary mt-1 shrink-0" />
-                      <p className="text-sm font-mono text-white/60 uppercase tracking-wider leading-relaxed">
+                      <p className="text-sm font-mono text-white/60 tracking-wider leading-relaxed">
                         No spam — unsubscribe at any time with one click
                       </p>
                     </div>
@@ -311,27 +434,74 @@ export default function HomePage() {
                 <Reveal animation="fade-left" delay={200}>
                   <form
                     className="border border-white/20 bg-white/5 p-8 md:p-10"
-                    onSubmit={(e) => { e.preventDefault(); if (newsletterEmail.trim()) setNewsletterDone(true) }}
+                    onSubmit={handleNewsletterSubmit}
                   >
                     <p className="text-[10px] font-mono font-bold text-primary uppercase tracking-[0.3em] mb-6">Subscribe to Core</p>
                     {newsletterDone ? (
-                      <p className="text-green-400 text-sm font-mono text-center py-8">✓ Subscribed! Check your inbox.</p>
+                      <p className="text-green-400 text-sm font-mono text-center py-8">✓ Subscribed successfully!</p>
                     ) : (
                       <div className="space-y-4">
+                        {newsletterError && (
+                          <p className="text-red-400 text-[11px] font-mono mb-2">{newsletterError}</p>
+                        )}
                         <input
-                          className="w-full px-5 py-4 bg-transparent border border-white/20 text-sm font-mono outline-none uppercase tracking-widest text-white placeholder:text-white/20 focus:border-primary transition-colors"
+                          className="w-full px-5 py-3 bg-transparent border border-white/20 text-sm font-mono outline-none tracking-widest text-white placeholder:text-white/40 focus:border-primary transition-colors"
+                          placeholder="Username"
+                          type="text"
+                          value={newsletterName}
+                          onChange={(e) => setNewsletterName(e.target.value)}
+                          required
+                        />
+                        <input
+                          className="w-full px-5 py-3 bg-transparent border border-white/20 text-sm font-mono outline-none tracking-widest text-white placeholder:text-white/40 focus:border-primary transition-colors"
                           placeholder="Your email address"
                           type="email"
                           value={newsletterEmail}
                           onChange={(e) => setNewsletterEmail(e.target.value)}
                           required
                         />
-                        <button type="submit" className="w-full py-4 bg-primary text-white text-xs font-mono font-black uppercase tracking-[0.3em] hover:bg-white hover:text-black transition-all">
-                          Subscribe
+                        <div className="flex border border-white/20 focus-within:border-primary transition-colors">
+                          <select 
+                            className="bg-white/5 text-white text-sm font-mono outline-none px-3 py-3 border-r border-white/20 appearance-none cursor-pointer"
+                            value={newsletterPhoneCode}
+                            onChange={(e) => setNewsletterPhoneCode(e.target.value)}
+                          >
+                            <option value="+1" className="text-black">🇺🇸 +1</option>
+                            <option value="+44" className="text-black">🇬🇧 +44</option>
+                            <option value="+61" className="text-black">🇦🇺 +61</option>
+                            <option value="+49" className="text-black">🇩🇪 +49</option>
+                            <option value="+86" className="text-black">🇨🇳 +86</option>
+                            <option value="+91" className="text-black">🇮🇳 +91</option>
+                            <option value="+971" className="text-black">🇦🇪 +971</option>
+                            <option value="+974" className="text-black">🇶🇦 +974</option>
+                            <option value="+255" className="text-black">🇹🇿 +255</option>
+                            <option value="+254" className="text-black">🇰🇪 +254</option>
+                            <option value="+256" className="text-black">🇺🇬 +256</option>
+                            <option value="+250" className="text-black">🇷🇼 +250</option>
+                            <option value="+257" className="text-black">🇧🇮 +257</option>
+                            <option value="+234" className="text-black">🇳🇬 +234</option>
+                            <option value="+233" className="text-black">🇬🇭 +233</option>
+                            <option value="+243" className="text-black">🇨🇩 +243</option>
+                            <option value="+27" className="text-black">🇿🇦 +27</option>
+                            <option value="+260" className="text-black">🇿🇲 +260</option>
+                            <option value="+263" className="text-black">🇿🇼 +263</option>
+                            <option value="+261" className="text-black">🇲🇬 +261</option>
+                            <option value="+212" className="text-black">🇲🇦 +212</option>
+                          </select>
+                          <input
+                            className="w-full px-4 py-3 bg-transparent text-sm font-mono outline-none tracking-widest text-white placeholder:text-white/40"
+                            placeholder="WhatsApp (Optional)"
+                            type="tel"
+                            value={newsletterPhone}
+                            onChange={(e) => setNewsletterPhone(e.target.value)}
+                          />
+                        </div>
+                        <button disabled={isSubscribing} type="submit" className="w-full py-3 bg-primary text-white text-xs font-mono font-black uppercase tracking-[0.3em] hover:bg-white hover:text-black transition-all disabled:opacity-50">
+                          {isSubscribing ? "Subscribing..." : "Subscribe"}
                         </button>
                       </div>
                     )}
-                    <p className="text-[9px] font-mono text-white/20 uppercase tracking-wider mt-4 text-center">
+                    <p className="text-[9px] font-mono text-white/20 uppercase tracking-wider mt-6 text-center">
                       Join 2,400+ automotive professionals
                     </p>
                   </form>
