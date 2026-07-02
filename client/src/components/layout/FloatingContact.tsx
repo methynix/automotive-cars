@@ -3,10 +3,16 @@ import { FiMessageCircle, FiInstagram, FiX, FiMail } from "react-icons/fi";
 import { FaWhatsapp } from "react-icons/fa";
 import { BsTwitterX } from "react-icons/bs";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSettings } from "@/hooks/useApi";
 
 export function FloatingContact() {
   const [isOpen, setIsOpen] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
+  const { data: settings } = useSettings();
+  const email = String(settings?.contact_email || "contact@future-automotive.com");
+  const whatsapp = String(settings?.whatsapp || "255689759215").replace(/[^0-9]/g, "");
+  const instagram = String(settings?.instagram_url || "https://instagram.com");
+  const twitter = String(settings?.twitter_url || "https://twitter.com");
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -42,8 +48,8 @@ export function FloatingContact() {
             </div>
             
             <div className="flex flex-col gap-3">
-              <a 
-                href="mailto:contact@future-automotive.com" 
+              <a
+                href={`mailto:${email}`}
                 className="flex items-center gap-4 bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/40 transition-all duration-300 p-3 group"
               >
                 <div className="w-10 h-10 bg-white/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
@@ -55,9 +61,9 @@ export function FloatingContact() {
                 </div>
               </a>
 
-              <a 
-                href="https://wa.me/255689759215" 
-                target="_blank" 
+              <a
+                href={`https://wa.me/${whatsapp}`}
+                target="_blank"
                 rel="noreferrer" 
                 className="flex items-center gap-4 bg-white/5 hover:bg-[#25D366]/10 border border-white/5 hover:border-[#25D366]/50 transition-all duration-300 p-3 group"
               >
@@ -70,9 +76,9 @@ export function FloatingContact() {
                 </div>
               </a>
 
-              <a 
-                href="https://instagram.com" 
-                target="_blank" 
+              <a
+                href={instagram}
+                target="_blank"
                 rel="noreferrer" 
                 className="flex items-center gap-4 bg-white/5 hover:bg-[#E1306C]/10 border border-white/5 hover:border-[#E1306C]/50 transition-all duration-300 p-3 group"
               >
@@ -85,9 +91,9 @@ export function FloatingContact() {
                 </div>
               </a>
 
-              <a 
-                href="https://twitter.com" 
-                target="_blank" 
+              <a
+                href={twitter}
+                target="_blank"
                 rel="noreferrer" 
                 className="flex items-center gap-4 bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/50 transition-all duration-300 p-3 group"
               >

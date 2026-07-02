@@ -2,11 +2,12 @@ import { useState } from "react"
 import { FiMail, FiPhone, FiMapPin, FiCheckCircle } from "react-icons/fi"
 import { Header } from "@/components/layout/Header"
 import { Footer } from "@/components/layout/Footer"
-import { useCreateLead } from "@/hooks/useApi"
+import { useCreateLead, useSettings } from "@/hooks/useApi"
 import { useToast } from "@/lib/toast"
 
 export default function ContactPage() {
   const createLead = useCreateLead()
+  const { data: settings } = useSettings()
   const toast = useToast()
   const [form, setForm] = useState({ full_name: "", email: "", phone: "", message: "" })
   const [done, setDone] = useState(false)
@@ -42,9 +43,15 @@ export default function ContactPage() {
               Questions about a vehicle, a test drive, or anything else? Send us a message and a specialist will get back to you.
             </p>
             <div className="space-y-4 text-sm font-mono">
-              <div className="flex items-center gap-3"><FiMail className="text-primary" /> hello@futureauto.co.tz</div>
-              <div className="flex items-center gap-3"><FiPhone className="text-primary" /> +255 700 000 000</div>
-              <div className="flex items-center gap-3"><FiMapPin className="text-primary" /> Masaki, Dar es Salaam</div>
+              {settings?.contact_email && (
+                <a href={`mailto:${settings.contact_email}`} className="flex items-center gap-3 hover:text-primary transition-colors"><FiMail className="text-primary" /> {settings.contact_email}</a>
+              )}
+              {settings?.contact_phone && (
+                <a href={`tel:${String(settings.contact_phone).replace(/\s+/g, "")}`} className="flex items-center gap-3 hover:text-primary transition-colors"><FiPhone className="text-primary" /> {settings.contact_phone}</a>
+              )}
+              {settings?.contact_address && (
+                <div className="flex items-center gap-3"><FiMapPin className="text-primary" /> {settings.contact_address}</div>
+              )}
             </div>
           </div>
 

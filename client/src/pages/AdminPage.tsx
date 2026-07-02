@@ -1217,11 +1217,15 @@ function SettingsTab() {
     hero_subtitle: "",
     contact_email: "",
     contact_phone: "",
+    contact_address: "",
+    whatsapp: "",
+    instagram_url: "",
+    twitter_url: "",
     seo_title: "",
     seo_description: "",
   })
-  
-  // Update state when data loads
+
+  // Update state when data loads (backend already merges sensible defaults)
   useEffect(() => {
     if (settingsData) {
       setFormData({
@@ -1229,6 +1233,10 @@ function SettingsTab() {
         hero_subtitle: settingsData.hero_subtitle || "",
         contact_email: settingsData.contact_email || "",
         contact_phone: settingsData.contact_phone || "",
+        contact_address: settingsData.contact_address || "",
+        whatsapp: settingsData.whatsapp || "",
+        instagram_url: settingsData.instagram_url || "",
+        twitter_url: settingsData.twitter_url || "",
         seo_title: settingsData.seo_title || "",
         seo_description: settingsData.seo_description || "",
       })
@@ -1288,6 +1296,27 @@ function SettingsTab() {
                   <div>
                     <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground block mb-1">Contact Phone</label>
                     <input type="text" name="contact_phone" value={formData.contact_phone} onChange={handleChange} className="w-full border border-border bg-background p-2 text-sm focus:border-primary outline-none" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground block mb-1">Address</label>
+                    <input type="text" name="contact_address" value={formData.contact_address} onChange={handleChange} className="w-full border border-border bg-background p-2 text-sm focus:border-primary outline-none" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground block mb-1">WhatsApp Number (digits only)</label>
+                    <input type="text" name="whatsapp" value={formData.whatsapp} onChange={handleChange} placeholder="255689759215" className="w-full border border-border bg-background p-2 text-sm focus:border-primary outline-none" />
+                  </div>
+                </div>
+
+                {/* Social Links */}
+                <div className="space-y-3 pt-4 border-t border-border/50">
+                  <h4 className="text-xs font-mono uppercase tracking-widest text-primary font-bold">Social Links</h4>
+                  <div>
+                    <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground block mb-1">Instagram URL</label>
+                    <input type="url" name="instagram_url" value={formData.instagram_url} onChange={handleChange} placeholder="https://instagram.com/…" className="w-full border border-border bg-background p-2 text-sm focus:border-primary outline-none" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground block mb-1">X (Twitter) URL</label>
+                    <input type="url" name="twitter_url" value={formData.twitter_url} onChange={handleChange} placeholder="https://twitter.com/…" className="w-full border border-border bg-background p-2 text-sm focus:border-primary outline-none" />
                   </div>
                 </div>
 
