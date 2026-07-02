@@ -398,9 +398,21 @@ export default function HomePage() {
 
         {/* NEWSLETTER — redesigned */}
         <section id="newsletter" className="py-20 bg-zinc-950 relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl" />
-          <div className="px-6 md:px-12 max-w-[1280px] mx-auto relative">
+          {/* Background Image Reveal with Special Effect */}
+          <div className="absolute top-0 left-0 w-full h-[65%] lg:h-full lg:w-[65%] z-0">
+            {/* Gradient masks to seamlessly feather the image into the dark background */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-zinc-950/80 to-zinc-950 z-10" />
+            <div className="absolute inset-0 bg-gradient-to-b from-zinc-950 via-transparent to-zinc-950 z-10" />
+            <img 
+              src="/detail-one.jpg" 
+              alt="Newsletter Background" 
+              className="w-full h-full object-cover opacity-40 grayscale mix-blend-lighten" 
+            />
+          </div>
+
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent z-10" />
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl z-0" />
+          <div className="px-6 md:px-12 max-w-[1280px] mx-auto relative z-20">
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-16 items-center">
               <div className="lg:col-span-3">
                 <Reveal animation="fade-right">

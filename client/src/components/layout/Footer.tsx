@@ -8,7 +8,7 @@ const API = import.meta.env.VITE_API_URL !== undefined ? import.meta.env.VITE_AP
 const yr=(new Date()).getFullYear();
 export function Footer() {
   return (
-    <footer className="bg-zinc-950 text-white border-t border-border/10">
+    <footer className="bg-zinc-950 text-white border-t-0 md:border-t border-border/10">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-10 md:gap-12 px-5 md:px-12 max-w-[1280px] mx-auto py-16 md:py-24">
         <div className="col-span-2 md:col-span-1">
           <h2 className="text-2xl md:text-3xl font-archivo font-extrabold text-white mb-5 tracking-tighter uppercase">FUTURE AUTOMOTIVE</h2>
